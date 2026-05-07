@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local db (학습용 JSON, 민감 데이터 포함 가능)
+data/users.json

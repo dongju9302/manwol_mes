@@ -1,0 +1,92 @@
+# 프롬프트 기록
+
+## 2026-05-06
+
+- page.tsx 보일러플레이트 전체 제거 후 "안녕하세요! all_is_well 프로젝트입니다." 텍스트만 화면 중앙에 표시
+- AGENTS.md에 프로젝트 개요(프로젝트명, 프레임워크, 목표, DB, 인증, 암호화) 및 작업 기록 섹션 추가 (1차)
+- CLAUDE.md에 작업 규칙 섹션 추가 (1차)
+- AGENTS.md 프로젝트 개요 유지 + CLAUDE.md 작업 규칙 항목 추가·수정 (2차: 작업 목록 승인, 체크리스트 검증, 간결한 답변, 해결방법 설명 항목 추가)
+- page.tsx 보일러플레이트 제거 후 /login으로 이동하는 버튼 배치
+- app/login/page.tsx 신규 생성 (이메일, 비밀번호 입력 필드, 로그인 버튼, Tailwind 스타일, TypeScript 타입)
+- AGENTS.md 작업 기록 섹션 삭제 + PROMPTS.md 신규 생성 + CLAUDE.md에 PROMPTS.md 기록 규칙 추가
+- 인증 관련 패키지 설치
+  - bcryptjs: 비밀번호를 해시(암호화)하고 검증하는 라이브러리. 평문 비밀번호를 DB에 저장하지 않고 해시값으로 저장할 때 사용
+  - jsonwebtoken: JWT(JSON Web Token)를 생성하고 검증하는 라이브러리. 로그인 성공 시 토큰을 발급하고, 요청마다 토큰을 확인해 인증 상태를 유지할 때 사용
+  - @types/bcryptjs: bcryptjs의 TypeScript 타입 정의 파일. TypeScript 프로젝트에서 bcryptjs를 타입 안전하게 사용하기 위해 필요
+  - @types/jsonwebtoken: jsonwebtoken의 TypeScript 타입 정의 파일. TypeScript 프로젝트에서 jsonwebtoken을 타입 안전하게 사용하기 위해 필요
+- data/users.json 신규 생성 (빈 배열로 초기화)
+- types/user.ts 신규 생성 (User 인터페이스 정의: id, email, password, createdAt)
+- app/api/auth/register/route.ts 신규 생성 (POST 회원가입 API: 유효성 검증, 이메일 중복 확인, bcrypt 해시, users.json 저장)
+- CLAUDE.md 작업 규칙을 필수 작업 순서 6단계 섹션으로 교체 (PROMPTS.md 기록을 필수 절차로 명시)
+- docs/HTTP_STATUS_CODES.md 신규 생성 (1xx~5xx 상태 코드 정리, 프로젝트 API 사용 현황 표 포함)
+- app/api/auth/login/route.ts 신규 생성 (POST 로그인 API: 이메일 조회, bcrypt 비밀번호 검증, JWT 토큰 생성, 쿠키 저장)
+- .env.local 신규 생성 (JWT_SECRET 환경변수 설정), .gitignore에 .env* 패턴으로 이미 포함 확인
+- register/route.ts + login/route.ts 코드 검토 후 개선: 이메일 형식·비밀번호 길이 검증, 소문자 정규화, NextResponse.cookies.set() 적용, 사용자 열거 공격 방지, JWT_SECRET 폴백 제거, Secure 쿠키 플래그 추가, 주석 스타일 별도 줄로 통일
+- CLAUDE.md에 코딩 규칙 및 코딩 규칙 검토 섹션 추가
+- .env.local의 JWT_SECRET을 crypto.randomBytes(64)로 생성한 안전한 값으로 교체
+- app/login/page.tsx에 /api/auth/login API 연동 (로그인 호출, 성공 시 / 이동, 실패 시 에러 메시지 표시, 로딩 상태 처리)
+- app/login/page.tsx UI 수정: 입력 필드 텍스트 색상 명확화(다크/라이트모드 대응), 에러 메시지 영역 고정 높이로 레이아웃 변경 방지
+- data/users.json에 테스트 계정 추가 (test@test.com / test1234, bcrypt 해시 적용)
+- types/user.ts의 User 인터페이스에 name 필드 추가 (email 다음), register/route.ts에서 name 추출·필수값 검증·저장 처리 추가
+- app/register/page.tsx 신규 생성 (이름·이메일·비밀번호 입력, POST /api/auth/register, 성공 시 /login 이동, 실패 시 에러 표시, 로그인 페이지와 동일 스타일)
+
+## 2026-05-07
+
+- app/login/page.tsx 로그인 버튼 아래에 "계정이 없으신가요? 회원가입" 링크 추가 (/register 이동)
+- PostgreSQL 관련 패키지 설치 (터미널에서 직접 실행)
+  - pg: Node.js에서 PostgreSQL에 접속하는 라이브러리. 서버 코드가 DB와 통신할 때 사용
+  - @types/pg: pg의 TypeScript 타입 정의 파일. TypeScript 프로젝트에서 pg를 타입 안전하게 사용하기 위해 필요
+  - 실행 명령어: npm install pg @types/pg
+- .env.local에 DATABASE_URL 추가 (postgresql://localhost:5432/all_is_well)
+- lib/db.ts 신규 생성 (pg Pool로 PostgreSQL 연결, process.env.DATABASE_URL 사용, 싱글턴 패턴으로 앱 전체에서 하나의 Pool만 사용)
+- DBeaver 연결 설정 완료 (Host: localhost, Port: 5432, Database: all_is_well) — GUI로 DB 데이터를 직접 조회·수정하는 툴
+- lib/db/migrate.ts 신규 생성 (users 테이블 생성: id SERIAL PK, email UNIQUE NOT NULL, password NOT NULL, created_at TIMESTAMP DEFAULT NOW(), CREATE TABLE IF NOT EXISTS 사용), npx ts-node lib/db/migrate.ts 로 실행 완료
+- pg/@types/pg 패키지 재설치, lib/db.ts 재생성 (pg Pool 싱글턴), .env.local에 DATABASE_URL 추가
+- register/route.ts — users.json 파일 I/O 제거 후 PostgreSQL INSERT INTO users 로 교체 (이메일 중복은 DB unique 제약 조건으로 처리)
+- login/route.ts — users.json 파일 I/O 제거 후 PostgreSQL SELECT WHERE email 로 교체
+- lib/auth.ts 신규 생성 (JWT 검증 헬퍼: 쿠키에서 token 추출 → jsonwebtoken 검증 → AuthUser 반환, 실패 시 null)
+- lib/db/migrate_posts.ts 신규 생성 (posts, comments, post_likes 테이블 생성 마이그레이션, 트랜잭션 적용, ON DELETE CASCADE 설정)
+- app/api/posts/route.ts 신규 생성 (GET: 게시글 목록 최신순+작성자명, POST: JWT 검증 후 게시글 작성)
+- app/api/posts/[id]/route.ts 신규 생성 (GET: 좋아요·싫어요 수 포함 상세조회, PUT·DELETE: 작성자 본인 검증 후 수정·삭제)
+- app/api/posts/[id]/comments/route.ts 신규 생성 (GET: 댓글+대댓글 중첩 구조 반환, POST: JWT 검증 후 댓글/대댓글 작성)
+- app/api/posts/[id]/comments/[commentId]/route.ts 신규 생성 (PUT·DELETE: 작성자 본인 검증 후 댓글 수정·삭제)
+- app/api/posts/[id]/likes/route.ts 신규 생성 (POST: 좋아요/싫어요 토글 — 동일타입 재클릭 시 취소, 다른타입 클릭 시 변경)
+- lib/auth.ts에 verifyAuthFromCookies() 추가 (서버 컴포넌트용: next/headers cookies()로 JWT 검증)
+- app/board/page.tsx 신규 생성 (서버 컴포넌트: 미로그인 시 /login 리다이렉트, DB 게시글 목록 조회, 글쓰기 버튼)
+- app/board/write/page.tsx 신규 생성 (클라이언트 컴포넌트: 제목·내용 입력 폼, POST /api/posts, 성공 시 /board 이동)
+- app/board/[id]/page.tsx 신규 생성 (서버 컴포넌트: 게시글 상세·좋아요수·댓글, 작성자 본인만 수정·삭제 버튼 표시)
+- app/board/[id]/_components/LikeButtons.tsx 신규 생성 (클라이언트: 좋아요·싫어요 토글, 낙관적 업데이트)
+- app/board/[id]/_components/CommentSection.tsx 신규 생성 (클라이언트: 댓글·대댓글 목록+작성폼+삭제, 낙관적 업데이트)
+- app/board/[id]/_components/DeleteButton.tsx 신규 생성 (클라이언트: 게시글 삭제 후 /board 이동)
+- app/board/[id]/edit/page.tsx 신규 생성 (클라이언트: 기존 내용 로드 후 수정, PUT /api/posts/[id], 성공 시 /board/[id] 이동)
+- app/register/page.tsx 하단에 "이미 계정이 있으신가요? 로그인" 링크 추가 (/login 이동, login/page.tsx의 회원가입 링크와 동일 스타일)
+- app/login/page.tsx 로그인 성공 시 이동 경로를 / → /board로 변경
+- proxy.ts 신규 생성 (Next.js 16에서 middleware.ts는 deprecated → proxy.ts로 변경됨. /login·/register는 공개, 그 외 전체 보호. 비로그인 시 /login 리다이렉트, 로그인 상태로 공개 경로 접근 시 /board 리다이렉트, JWT 쿠키 검증)
+- app/api/auth/logout/route.ts 신규 생성 (POST: token 쿠키 삭제 후 /login 리다이렉트)
+- app/components/Sidebar.tsx 신규 생성 (클라이언트: usePathname 활성 메뉴 하이라이트, 로그아웃, 사용자 이름 표시, 모바일 hidden)
+- app/board/layout.tsx 신규 생성 (서버: 유저 이름 DB 조회, Sidebar + children 레이아웃 구성, /board/** 전체 적용)
+- app/board/page.tsx 헤더에서 LogoutButton 제거 (사이드바로 이동)
+- app/icon.svg 신규 생성 (체크마크 아이콘, favicon.ico 대체) → logo.png로 교체
+- public/logo.png를 사이드바 상단 로고 및 파비콘으로 적용
+- Sidebar.tsx 로고 크기 width=80 height=27로 축소
+- Sidebar.tsx 로고 영역 개편: 로고 이미지 → "Manwol"(굵게) → "MES"(작은 회색) 세로 배치, 전체 가운데 정렬
+- app/icon.svg, app/favicon.ico 삭제 / layout.tsx icons → { icon, shortcut, apple } 모두 /logo.png로 설정
+- layout.tsx title → "Manwol MES", icons → { icon: [{ url: '/logo.png' }] }로 변경
+- app/layout.tsx metadata title → "all_is_well", description 수정, html lang → "ko"
+- posts 테이블에 view_count INTEGER DEFAULT 0 컬럼 추가 (ALTER TABLE, DBeaver에서 실행)
+- app/api/posts/[id]/route.ts GET에 view_count +1 UPDATE 추가, 응답에 view_count 포함
+- app/board/page.tsx 테이블 스타일 개선: 헤더 bg-gray-200, 행 bg-white + hover:bg-gray-50, 테두리+그림자 추가
+- 시스템 전체 폰트를 Pretendard로 변경 (CDN, globals.css font-family, @theme --font-sans 등록, Geist 폰트 제거)
+- app/board/write/page.tsx 헤더 개선: ← 아이콘 버튼 + "글쓰기" 제목 한 줄 배치로 변경
+- app/board/_components/BoardFilter.tsx 신규 생성 → 체크박스 선택삭제 방식으로 개편
+- BoardFilter.tsx 삭제 버튼 로직 수정: 전체삭제 버튼 제거, 전체선택 시 버튼 텍스트 "전체삭제"로 변경, 미선택 시 버튼 숨김
+- BoardFilter.tsx 선택삭제 버튼 항상 표시로 변경: 미선택 시 회색 비활성화, 일부 선택 시 "선택삭제", 전체 선택 시 "전체삭제"
+- BoardFilter.tsx 모든 버튼 padding py-2 px-4로 통일
+- app/components/Button.tsx 신규 생성 (variant: primary·secondary·danger, size: sm·md, disabled 처리)
+- BoardFilter.tsx 게시글 번호를 DB id → 목록 순서(index + 1)로 변경
+- data/users.json 및 data/ 폴더 삭제, 미사용 types/user.ts 삭제 (PostgreSQL 전환으로 불필요)
+- BoardFilter.tsx, write/page.tsx, DeleteButton.tsx 버튼을 Button 컴포넌트로 교체 (전체글: 번호 표시, 내글만: 체크박스 + 전체선택, 전체삭제/선택삭제 버튼, 행 높이 통일)
+- app/board/page.tsx SQL에 user_id 추가, 테이블 렌더링을 BoardFilter로 위임
+- app/board/page.tsx 테이블 개편: 번호·제목·작성자·조회수·좋아요·싫어요·작성일 7개 컬럼, 컬럼 구분선, 헤더 가운데 정렬, 제목 왼쪽 정렬
+- app/board/_components/LogoutButton.tsx 신규 생성 (클라이언트 컴포넌트: POST /api/auth/logout 호출 후 /login 이동)
+- app/board/page.tsx 헤더에 LogoutButton 추가 (글쓰기 버튼 왼쪽 배치)
