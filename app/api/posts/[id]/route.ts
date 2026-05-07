@@ -28,7 +28,7 @@ interface PostDetailRow {
 
 // GET /api/posts/[id] — 게시글 상세 조회 (좋아요/싫어요 수 포함)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
   // params는 Promise이므로 await 필요 (Next.js 15+ 변경사항)
@@ -44,11 +44,9 @@ export async function GET(
   }
 
   try {
-    // 조회수 1 증가: 상세 조회 API 호출 시마다 카운트
-    await pool.query(
-      "UPDATE posts SET view_count = view_count + 1 WHERE id = $1",
-      [postId]
-    );
+    // [디버그] 이 GET API는 수정(edit) 페이지에서만 호출됨
+    // 실제 조회수 증가는 서버 컴포넌트(board/[id]/page.tsx)에서 처리
+    console.log(`[GET /api/posts/${postId}] 호출 — 수정 페이지용, view_count 미증가`);
 
     // 게시글 + 작성자 + 좋아요/싫어요 수 + 조회수를 한 번의 쿼리로 조회
     const result = await pool.query<PostDetailRow>(

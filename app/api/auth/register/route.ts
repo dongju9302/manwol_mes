@@ -1,6 +1,12 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
+
+// JWT 토큰 만료 시간 (login/route.ts와 동일)
+const JWT_EXPIRES_IN = "7d";
+// 쿠키 만료 시간 (7일, 초 단위)
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
 // 비밀번호 해시에 사용할 salt 라운드 수 (높을수록 보안 강화, 느려짐)
 const SALT_ROUNDS = 10;
@@ -62,11 +68,39 @@ export async function POST(request: NextRequest): Promise<Response> {
     // INSERT 결과에서 생성된 사용자 id 추출
     const newUserId: number = result.rows[0].id;
 
-    // 성공 응답 (비밀번호는 응답에서 제외)
-    return Response.json(
+    // JWT_SECRET 환경변수 확인
+    const jwtSecret: string = process.env.JWT_SECRET ?? "";
+    if (!jwtSecret) {
+      console.error("JWT_SECRET 환경변수가 설정되지 않았습니다.");
+      return Response.json(
+        { message: "서버 설정 오류가 발생했습니다." },
+        { status: 500 }
+      );
+    }
+
+    // 회원가입 즉시 JWT 토큰 생성 (자동 로그인)
+    const token: string = jwt.sign(
+      { userId: String(newUserId), email: normalizedEmail },
+      jwtSecret,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    // 성공 응답 생성 (비밀번호는 응답에서 제외)
+    const response = NextResponse.json(
       { message: "회원가입이 완료되었습니다.", userId: newUserId },
       { status: 201 }
     );
+
+    // HttpOnly 쿠키에 토큰 저장 (login/route.ts와 동일한 설정)
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: COOKIE_MAX_AGE,
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
     // PostgreSQL unique 제약 조건 위반 (이메일 중복)
     if (

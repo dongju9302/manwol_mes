@@ -88,6 +88,15 @@ export default async function PostDetailPage({
 
   const post = postResult.rows[0];
 
+  // 작성자 본인이 아닌 경우에만 view_count 증가
+  // (서버 컴포넌트가 실제 조회 경로이므로 여기서 처리)
+  if (post.user_id !== authUser.userId) {
+    await pool.query(
+      "UPDATE posts SET view_count = view_count + 1 WHERE id = $1",
+      [postId]
+    );
+  }
+
   // 현재 사용자의 좋아요/싫어요 상태 조회 (없으면 null)
   const userLikeResult = await pool.query<{ type: string }>(
     "SELECT type FROM post_likes WHERE post_id = $1 AND user_id = $2",

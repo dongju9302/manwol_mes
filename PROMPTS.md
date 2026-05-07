@@ -85,6 +85,12 @@
 - app/components/Button.tsx 신규 생성 (variant: primary·secondary·danger, size: sm·md, disabled 처리)
 - BoardFilter.tsx 게시글 번호를 DB id → 목록 순서(index + 1)로 변경
 - data/users.json 및 data/ 폴더 삭제, 미사용 types/user.ts 삭제 (PostgreSQL 전환으로 불필요)
+- api/posts/[id]/route.ts GET: 작성자 본인 조회 시 view_count 증가 안 함 → 실제 조회 경로는 서버 컴포넌트이므로 board/[id]/page.tsx로 이동, API route는 수정 페이지 전용
+- board/[id]/page.tsx에 view_count 증가 로직 추가 (작성자 본인 제외)
+- CommentSection.tsx textarea rows=2 → rows=1 축소
+- api/auth/register/route.ts: 회원가입 성공 시 JWT 쿠키 발급 + 자동 로그인
+- app/register/page.tsx: 회원가입 성공 시 /login → /board로 이동
+- app/login/page.tsx, app/register/page.tsx: 비밀번호 필드에 눈 아이콘 토글 추가
 - BoardFilter.tsx, write/page.tsx, DeleteButton.tsx 버튼을 Button 컴포넌트로 교체 (전체글: 번호 표시, 내글만: 체크박스 + 전체선택, 전체삭제/선택삭제 버튼, 행 높이 통일)
 - app/board/page.tsx SQL에 user_id 추가, 테이블 렌더링을 BoardFilter로 위임
 - app/board/page.tsx 테이블 개편: 번호·제목·작성자·조회수·좋아요·싫어요·작성일 7개 컬럼, 컬럼 구분선, 헤더 가운데 정렬, 제목 왼쪽 정렬

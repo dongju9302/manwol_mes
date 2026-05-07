@@ -323,7 +323,7 @@ export default function CommentSection({
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="댓글을 입력하세요"
             disabled={isSubmitting}
-            rows={2}
+            rows={1}
             className="flex-1 resize-none rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
           />
           <button
