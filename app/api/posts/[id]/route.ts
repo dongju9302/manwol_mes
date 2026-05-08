@@ -4,38 +4,27 @@ import { verifyAuth } from "@/lib/auth";
 
 // DB에서 조회한 게시글 상세 행 타입
 interface PostDetailRow {
-  // 게시글 고유 식별자
   id: number;
-  // 게시글 제목
   title: string;
-  // 게시글 본문
   content: string;
-  // 작성자 사용자 ID
   user_id: number;
-  // JOIN으로 가져온 작성자 이름
   author_name: string;
-  // COUNT는 pg에서 문자열로 반환되므로 string 타입
+  // COUNT는 pg에서 문자열로 반환
   like_count: string;
-  // 싫어요 수 (문자열)
   dislike_count: string;
-  // 조회수
   view_count: number;
-  // 작성 시각
   created_at: string;
-  // 수정 시각
   updated_at: string;
 }
 
-// GET /api/posts/[id] — 게시글 상세 조회 (좋아요/싫어요 수 포함)
+// GET /api/posts/[id] — 게시글 상세 조회 (수정 페이지에서 기존 내용 로드용)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  // params는 Promise이므로 await 필요 (Next.js 15+ 변경사항)
   const { id } = await params;
   const postId = parseInt(id, 10);
 
-  // 숫자가 아닌 id 요청 차단
   if (isNaN(postId)) {
     return Response.json(
       { message: "올바르지 않은 게시글 ID입니다." },
@@ -44,11 +33,7 @@ export async function GET(
   }
 
   try {
-    // [디버그] 이 GET API는 수정(edit) 페이지에서만 호출됨
-    // 실제 조회수 증가는 서버 컴포넌트(board/[id]/page.tsx)에서 처리
-    console.log(`[GET /api/posts/${postId}] 호출 — 수정 페이지용, view_count 미증가`);
-
-    // 게시글 + 작성자 + 좋아요/싫어요 수 + 조회수를 한 번의 쿼리로 조회
+    // is_deleted = false: soft delete된 게시글은 조회 불가
     const result = await pool.query<PostDetailRow>(
       `SELECT
          p.id,
@@ -64,7 +49,7 @@ export async function GET(
        FROM posts p
        JOIN users u ON p.user_id = u.id
        LEFT JOIN post_likes pl ON p.id = pl.post_id
-       WHERE p.id = $1
+       WHERE p.id = $1 AND p.is_deleted = false
        GROUP BY p.id, u.id`,
       [postId]
     );
@@ -77,13 +62,11 @@ export async function GET(
     }
 
     const post = result.rows[0];
-
     return Response.json(
       {
         post: {
           ...post,
-          // pg COUNT 결과(문자열)를 정수로 변환
-          like_count: parseInt(post.like_count, 10),
+          like_count:    parseInt(post.like_count, 10),
           dislike_count: parseInt(post.dislike_count, 10),
         },
       },
@@ -103,7 +86,6 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  // JWT 쿠키 검증
   const authUser = verifyAuth(request);
   if (!authUser) {
     return Response.json(
@@ -123,9 +105,9 @@ export async function PUT(
   }
 
   try {
-    // 게시글 존재 여부 및 작성자 확인
+    // is_deleted = false: soft delete된 게시글은 수정 불가
     const postResult = await pool.query<{ user_id: number }>(
-      "SELECT user_id FROM posts WHERE id = $1",
+      "SELECT user_id FROM posts WHERE id = $1 AND is_deleted = false",
       [postId]
     );
 
@@ -144,7 +126,6 @@ export async function PUT(
       );
     }
 
-    // 요청 본문에서 수정할 필드 추출 (둘 다 선택사항)
     const body: { title?: string; content?: string } = await request.json();
     const { title, content } = body;
 
@@ -162,14 +143,11 @@ export async function PUT(
       );
     }
 
-    // COALESCE: 값이 null이면 기존 컬럼 값 유지 (입력되지 않은 필드는 변경 안 함)
+    // COALESCE: 값이 null이면 기존 컬럼 값 유지
     await pool.query(
       `UPDATE posts
-       SET
-         title      = COALESCE($1, title),
-         content    = COALESCE($2, content),
-         updated_at = NOW()
-       WHERE id = $3`,
+       SET title = COALESCE($1, title), content = COALESCE($2, content), updated_at = NOW()
+       WHERE id = $3 AND is_deleted = false`,
       [title ?? null, content ?? null, postId]
     );
 
@@ -183,12 +161,12 @@ export async function PUT(
   }
 }
 
-// DELETE /api/posts/[id] — 게시글 삭제 (작성자 본인만 가능)
+// DELETE /api/posts/[id] — 게시글 Soft Delete (작성자 본인만 가능)
+// 실제 행 삭제 대신 is_deleted = true, deleted_at = NOW() 로 논리 삭제 처리
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  // JWT 쿠키 검증
   const authUser = verifyAuth(request);
   if (!authUser) {
     return Response.json(
@@ -208,9 +186,9 @@ export async function DELETE(
   }
 
   try {
-    // 게시글 존재 여부 및 작성자 확인
+    // is_deleted = false: 이미 삭제된 게시글은 처리 대상에서 제외
     const postResult = await pool.query<{ user_id: number }>(
-      "SELECT user_id FROM posts WHERE id = $1",
+      "SELECT user_id FROM posts WHERE id = $1 AND is_deleted = false",
       [postId]
     );
 
@@ -229,8 +207,11 @@ export async function DELETE(
       );
     }
 
-    // 게시글 삭제 (ON DELETE CASCADE로 comments, post_likes도 자동 삭제)
-    await pool.query("DELETE FROM posts WHERE id = $1", [postId]);
+    // Soft Delete: 실제 행 삭제 없이 삭제 플래그만 업데이트
+    await pool.query(
+      "UPDATE posts SET is_deleted = true, deleted_at = NOW() WHERE id = $1",
+      [postId]
+    );
 
     return Response.json({ message: "게시글이 삭제되었습니다." }, { status: 200 });
   } catch (error) {

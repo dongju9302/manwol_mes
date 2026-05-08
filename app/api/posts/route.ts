@@ -24,6 +24,7 @@ interface PostRow {
 export async function GET(): Promise<Response> {
   try {
     // posts와 users를 JOIN해 작성자 이름 포함, 최신순 정렬
+    // is_deleted = false: soft delete된 게시글 제외
     const result = await pool.query<PostRow>(`
       SELECT
         p.id,
@@ -35,6 +36,7 @@ export async function GET(): Promise<Response> {
         p.updated_at
       FROM posts p
       JOIN users u ON p.user_id = u.id
+      WHERE p.is_deleted = false
       ORDER BY p.created_at DESC
     `);
 

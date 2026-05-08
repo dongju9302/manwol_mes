@@ -21,6 +21,10 @@ interface JwtPayload {
   userId: string;
   // 사용자 이메일
   email: string;
+  // 권한 역할
+  role: string;
+  // 계정 활성화 여부
+  isActive: boolean;
 }
 
 // DB에서 조회한 사용자 행 타입 정의
@@ -31,6 +35,10 @@ interface UserRow {
   email: string;
   // bcrypt 해시 비밀번호
   password: string;
+  // 권한 역할: 'master' | 'admin' | 'user'
+  role: string;
+  // 계정 활성화 여부
+  is_active: boolean;
 }
 
 // POST /api/auth/login — 이메일 + 비밀번호로 로그인 처리
@@ -67,9 +75,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 이메일 소문자 정규화 (대소문자 구분 없이 동일 계정으로 처리)
     const normalizedEmail: string = email.toLowerCase();
 
-    // DB에서 이메일로 사용자 조회
+    // DB에서 이메일로 사용자 조회 (role, is_active 포함)
+    // is_deleted = false: soft delete(탈퇴)된 계정은 로그인 불가
+    // 탈퇴 계정도 "이메일 또는 비밀번호 불일치" 메시지로 처리 (계정 존재 여부 노출 방지)
     const result = await pool.query<UserRow>(
-      `SELECT id, email, password FROM users WHERE email = $1`,
+      `SELECT id, email, password, role, is_active FROM users WHERE email = $1 AND is_deleted = false`,
       [normalizedEmail]
     );
 
@@ -92,6 +102,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // 비활성화 계정 로그인 차단 (비밀번호 검증 통과 후 확인)
+    if (!user.is_active) {
+      return NextResponse.json(
+        { message: "비활성화된 계정입니다. 관리자에게 문의하세요." },
+        { status: 403 }
+      );
+    }
+
     // JWT_SECRET 환경변수 미설정 시 서버 오류 처리 (폴백 기본값 사용 금지)
     const jwtSecret: string = process.env.JWT_SECRET ?? "";
     if (!jwtSecret) {
@@ -102,11 +120,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // JWT 토큰 생성 (페이로드에 userId, email 포함)
-    // SERIAL PK는 정수이므로 문자열로 변환
+    // JWT 토큰 생성 (페이로드에 userId, email, role, isActive 포함)
     const payload: JwtPayload = {
       userId: String(user.id),
       email: user.email,
+      role: user.role,
+      isActive: user.is_active,
     };
     const token: string = jwt.sign(payload, jwtSecret, {
       expiresIn: JWT_EXPIRES_IN,

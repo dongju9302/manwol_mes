@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import Button from "@/app/components/Button";
+import { AlignableTable, type ColumnDef } from "@/app/components/ui/Table";
 
 // 서버에서 전달받는 게시글 타입
 export interface Post {
@@ -34,7 +35,9 @@ function formatDate(dateStr: string): string {
   return `${yyyy}.${mm}.${dd}`;
 }
 
-// 게시판 필터 + 테이블 — 클라이언트 컴포넌트
+// 게시판 필터 + 목록 — 클라이언트 컴포넌트
+// 모바일(md 미만): 카드 형식
+// 태블릿/데스크탑(md 이상): AlignableTable (⚙️ 정렬 편집 내장)
 export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) {
   // 현재 선택된 필터 (기본: 전체글)
   const [filter, setFilter] = useState<FilterType>("all");
@@ -89,11 +92,10 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
     );
   };
 
-  // 지정된 ID 목록을 순차 삭제 후 로컬 목록에서 제거
+  // 지정된 ID 목록을 병렬 삭제 후 로컬 목록에서 제거
   const deletePosts = async (ids: number[]): Promise<void> => {
     setIsDeleting(true);
     try {
-      // 병렬 DELETE 호출
       await Promise.all(
         ids.map((id) => fetch(`/api/posts/${id}`, { method: "DELETE" }))
       );
@@ -112,11 +114,102 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
     await deletePosts([...checkedIds]);
   };
 
+  // 빈 목록 안내 문구
+  const emptyMessage = isMineFilter
+    ? "작성한 게시글이 없습니다."
+    : "아직 게시글이 없습니다. 첫 글을 작성해보세요!";
+
+  // ── AlignableTable 컬럼 정의 ─────────────────────────────────────
+  // isMineFilter에 따라 번호 컬럼 레이블 동적 구성 (체크박스 또는 "번호" 텍스트)
+  const columns: ColumnDef[] = [
+    {
+      key: "no",
+      label: isMineFilter ? (
+        // 내글만 모드: 전체선택 체크박스를 레이블로 사용
+        <input
+          ref={headerCheckboxRef}
+          type="checkbox"
+          checked={allChecked}
+          onChange={toggleAll}
+          className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-blue-600"
+        />
+      ) : (
+        "번호"
+      ),
+      defaultAlign: "center",
+      className: "w-14",
+    },
+    { key: "title",     label: "제목",   defaultAlign: "left"   },
+    { key: "author",    label: "작성자", defaultAlign: "center", className: "w-24" },
+    { key: "viewCount", label: "조회수", defaultAlign: "center", className: "hidden lg:table-cell w-16" },
+    { key: "like",      label: "👍",     defaultAlign: "center", className: "hidden lg:table-cell w-14" },
+    { key: "dislike",   label: "👎",     defaultAlign: "center", className: "hidden lg:table-cell w-14" },
+    { key: "createdAt", label: "작성일", defaultAlign: "center", className: "w-28" },
+  ];
+
+  // ── AlignableTable 셀 렌더링 함수 ────────────────────────────────
+  // columnKey에 따라 각 셀 JSX를 반환
+  const renderCell = (key: string, post: Post, index: number): ReactNode => {
+    switch (key) {
+      case "no":
+        // 내글만 모드: 체크박스 / 전체글 모드: 순번
+        return isMineFilter ? (
+          <input
+            type="checkbox"
+            checked={checkedIds.has(post.id)}
+            onChange={() => toggleCheck(post.id)}
+            className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-blue-600"
+          />
+        ) : (
+          <span className="text-gray-400">{index + 1}</span>
+        );
+
+      case "title":
+        // 제목: 클릭 시 게시글 상세 이동, 긴 제목 말줄임
+        return (
+          <Link
+            href={`/board/${post.id}`}
+            className="block truncate font-medium text-gray-800 hover:text-blue-600"
+          >
+            {post.title}
+          </Link>
+        );
+
+      case "author":
+        return <span className="text-gray-500">{post.author_name}</span>;
+
+      case "viewCount":
+        return <span className="text-gray-500">{post.view_count}</span>;
+
+      case "like":
+        return (
+          <span className="text-blue-500">
+            {parseInt(post.like_count, 10)}
+          </span>
+        );
+
+      case "dislike":
+        return (
+          <span className="text-red-400">
+            {parseInt(post.dislike_count, 10)}
+          </span>
+        );
+
+      case "createdAt":
+        return (
+          <span className="text-gray-400">{formatDate(post.created_at)}</span>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div>
-      {/* 필터 버튼 + 삭제 액션 버튼 (내글만 선택 시 표시) */}
+      {/* 필터 버튼 + 삭제 버튼 */}
       <div className="mb-3 flex items-center justify-between">
-        {/* 좌측: 필터 버튼 */}
+        {/* 좌측: 전체글/내글만 필터 버튼 */}
         <div className="flex gap-2">
           {(["all", "mine"] as FilterType[]).map((f) => (
             <Button
@@ -129,125 +222,88 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
           ))}
         </div>
 
-        {/* 우측: 삭제 버튼 (내글만일 때 항상 표시) */}
-        {isMineFilter && filteredPosts.length > 0 && (
+        {/* 우측: 선택삭제 버튼 — 내글만 모드에서 1개 이상 선택 시에만 표시 */}
+        {isMineFilter && checkedIds.size > 0 && (
           <Button
             variant="danger"
             onClick={handleDeleteSelected}
-            disabled={isDeleting || checkedIds.size === 0}
+            disabled={isDeleting}
           >
             {allChecked ? "전체삭제" : "선택삭제"}
           </Button>
         )}
       </div>
 
-      {/* 게시글 테이블 */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+      {/* ── 모바일 카드 목록 (md 미만) ── */}
+      <div className="md:hidden">
         {filteredPosts.length === 0 ? (
-          <div className="bg-white py-16 text-center text-sm text-gray-400">
-            {isMineFilter
-              ? "작성한 게시글이 없습니다."
-              : "아직 게시글이 없습니다. 첫 글을 작성해보세요!"}
+          <div className="rounded-xl bg-white py-12 text-center text-sm text-gray-400">
+            {emptyMessage}
           </div>
         ) : (
-          <table className="w-full table-fixed">
-            <colgroup>
-              {/* 번호/체크박스 열 */}
-              <col className="w-14" />
-              {/* 제목 열 */}
-              <col />
-              <col className="w-24" />
-              <col className="w-16" />
-              <col className="w-14" />
-              <col className="w-14" />
-              <col className="w-28" />
-            </colgroup>
-
-            <thead>
-              <tr className="divide-x divide-gray-200 border-b border-gray-200 bg-gray-100 text-sm text-gray-600">
-                {/* 전체글: 번호 / 내글만: 전체선택 체크박스 */}
-                <th className="h-12 text-center font-medium">
-                  {isMineFilter ? (
+          <div className="space-y-2">
+            {filteredPosts.map((post, index) => (
+              // relative: 내글만 체크박스를 카드 오른쪽 위에 absolute 배치
+              <div
+                key={post.id}
+                className="relative rounded-xl border border-gray-200 bg-white shadow-sm"
+              >
+                {/* 내글만 모드: 체크박스 (링크와 분리하여 별도 배치) */}
+                {isMineFilter && (
+                  <div className="absolute right-3 top-3 z-10">
                     <input
-                      ref={headerCheckboxRef}
                       type="checkbox"
-                      checked={allChecked}
-                      onChange={toggleAll}
-                      className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-blue-600"
+                      checked={checkedIds.has(post.id)}
+                      onChange={() => toggleCheck(post.id)}
+                      className="h-5 w-5 cursor-pointer rounded border-gray-300 accent-blue-600"
                     />
-                  ) : (
-                    "번호"
-                  )}
-                </th>
-                <th className="h-12 text-center font-medium">제목</th>
-                <th className="h-12 text-center font-medium">작성자</th>
-                <th className="h-12 text-center font-medium">조회수</th>
-                <th className="h-12 text-center font-medium">👍</th>
-                <th className="h-12 text-center font-medium">👎</th>
-                <th className="h-12 text-center font-medium">작성일</th>
-              </tr>
-            </thead>
+                  </div>
+                )}
 
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {filteredPosts.map((post, index) => (
-                <tr
-                  key={post.id}
-                  className="divide-x divide-gray-100 transition-colors hover:bg-gray-50"
-                >
-                  {/* 번호(전체글): 현재 목록 순서 기준 1번부터 표시 (DB id 아님) */}
-                  {/* 체크박스(내글만): 선택 삭제용 */}
-                  <td className="h-12 text-center text-sm text-gray-400">
-                    {isMineFilter ? (
-                      <input
-                        type="checkbox"
-                        checked={checkedIds.has(post.id)}
-                        onChange={() => toggleCheck(post.id)}
-                        className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-blue-600"
-                      />
-                    ) : (
-                      index + 1
-                    )}
-                  </td>
+                {/* 카드 본문: 제목 클릭 시 게시글 상세로 이동 */}
+                <Link href={`/board/${post.id}`} className="block p-4">
+                  {/* 번호 */}
+                  <span className="text-xs text-gray-400">{index + 1}</span>
 
-                  {/* 제목 */}
-                  <td className="h-12 px-3 text-left">
-                    <Link
-                      href={`/board/${post.id}`}
-                      className="block truncate text-sm font-medium text-gray-800 hover:text-blue-600"
-                    >
-                      {post.title}
-                    </Link>
-                  </td>
+                  {/* 제목: 내글만 모드에서 체크박스와 겹치지 않도록 우측 패딩 */}
+                  <p
+                    className={`mt-0.5 text-sm font-semibold text-gray-800 ${
+                      isMineFilter ? "pr-8" : ""
+                    }`}
+                  >
+                    {post.title}
+                  </p>
 
-                  {/* 작성자 */}
-                  <td className="h-12 text-center text-sm text-gray-500">
-                    {post.author_name}
-                  </td>
-
-                  {/* 조회수 */}
-                  <td className="h-12 text-center text-sm text-gray-500">
-                    {post.view_count}
-                  </td>
-
-                  {/* 좋아요 */}
-                  <td className="h-12 text-center text-sm text-blue-500">
-                    {parseInt(post.like_count, 10)}
-                  </td>
-
-                  {/* 싫어요 */}
-                  <td className="h-12 text-center text-sm text-red-400">
-                    {parseInt(post.dislike_count, 10)}
-                  </td>
-
-                  {/* 작성일 */}
-                  <td className="h-12 text-center text-sm text-gray-400">
-                    {formatDate(post.created_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {/* 메타 정보: 작성자 · 조회수 · 좋아요 · 싫어요 · 날짜 */}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                    <span>{post.author_name}</span>
+                    <span>조회 {post.view_count}</span>
+                    <span className="text-blue-500">
+                      👍 {parseInt(post.like_count, 10)}
+                    </span>
+                    <span className="text-red-400">
+                      👎 {parseInt(post.dislike_count, 10)}
+                    </span>
+                    <span>{formatDate(post.created_at)}</span>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
         )}
+      </div>
+
+      {/* ── 태블릿/데스크탑 테이블 (md 이상) — AlignableTable 사용 ── */}
+      <div className="hidden md:block">
+        <AlignableTable
+          tableId="board"
+          columns={columns}
+          data={filteredPosts}
+          renderCell={renderCell}
+          getRowKey={(post) => post.id}
+          emptyMessage={emptyMessage}
+          // theadClassName·rowDivide는 AlignableTable 기본값과 동일하므로 생략
+        />
       </div>
     </div>
   );

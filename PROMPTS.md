@@ -96,3 +96,116 @@
 - app/board/page.tsx 테이블 개편: 번호·제목·작성자·조회수·좋아요·싫어요·작성일 7개 컬럼, 컬럼 구분선, 헤더 가운데 정렬, 제목 왼쪽 정렬
 - app/board/_components/LogoutButton.tsx 신규 생성 (클라이언트 컴포넌트: POST /api/auth/logout 호출 후 /login 이동)
 - app/board/page.tsx 헤더에 LogoutButton 추가 (글쓰기 버튼 왼쪽 배치)
+
+## 2026-05-08
+
+- users 테이블에 phone VARCHAR(20) NOT NULL DEFAULT '' 컬럼 추가 (ALTER TABLE, DBeaver에서 실행)
+- app/register/page.tsx: 이름과 이메일 사이에 연락처(모바일) 입력 필드 추가 (010-0000-0000 자동 하이픈, 필수값, 010으로 시작하는 11자리 유효성 검사)
+- app/api/auth/register/route.ts: phone 값 추출·필수값 검증·형식 유효성 검사·DB INSERT 포함
+- 시스템 전체 반응형 UI 적용 (모바일 < 768px / 태블릿 768~1024px / 데스크탑 1024px+, Tailwind md:/lg: 클래스 사용)
+  - app/components/Sidebar.tsx: 모바일 햄버거+슬라이드 드로어+딤처리, 태블릿 아이콘 전용 좁은 사이드바(w-16), 데스크탑 전체 사이드바(w-60)
+  - app/board/layout.tsx: 모바일 햄버거 버튼 아래 콘텐츠 밀기 (pt-16 md:pt-0)
+  - app/components/Button.tsx: md 사이즈 최소 높이 44px 적용 (터치 친화적)
+  - app/board/_components/BoardFilter.tsx: 모바일 카드 형식, 태블릿 간소화 테이블(조회수·좋아요·싫어요 숨김), 데스크탑 전체 테이블
+  - app/board/page.tsx: 모바일 패딩 축소, 글쓰기 버튼 터치 영역 확대
+  - app/board/[id]/page.tsx: 모바일/태블릿 px/py 축소, 제목 폰트 크기 반응형
+  - app/board/write/page.tsx: 모바일 폼 패딩 축소, 버튼 터치 영역 확대
+  - app/board/[id]/edit/page.tsx: 모바일 폼 패딩 축소, 버튼 터치 영역 확대
+  - app/login/page.tsx: 모바일 전체 너비 + 패딩, 버튼 최소 높이 44px
+  - app/register/page.tsx: 모바일 전체 너비 + 패딩, 버튼 최소 높이 44px
+- app/api/auth/check-email/route.ts 신규 생성 (GET: email 쿼리 파라미터로 중복 여부 확인, available: boolean 반환)
+- app/register/page.tsx 이메일 중복 검사 및 버튼 활성화 조건 추가
+  - onBlur 시 GET /api/auth/check-email 호출 → 초록(사용 가능) / 빨간(중복) 메시지
+  - 이메일 수정 시 검사 상태 idle로 초기화
+  - 버튼 활성화 조건: 이름 1자+, 이메일 형식 유효+중복 통과, 연락처 형식 유효, 비밀번호 8자+
+- app/register/page.tsx 각 입력란 인라인 유효성 메시지 추가 (onBlur 트리거, 고정 h-5 영역)
+  - 이름: 빈값 → 빨간 "이름을 입력해주세요."
+  - 연락처: 형식 불일치 → 빨간 메시지, 올바른 형식 → 초록 메시지
+  - 이메일: 형식 오류 → 빨간, 중복 → 빨간, 사용 가능 → 초록, 확인 중 → 회색
+  - 비밀번호: 8자 미만 → 빨간, 8자 이상 → 초록
+- 권한 시스템 구현
+  - DBeaver 실행 쿼리: users(role VARCHAR(10) CHECK master/admin/user, is_active BOOLEAN), page_permissions 테이블 생성, /board 기본 데이터 INSERT
+  - lib/auth.ts: JwtPayload·AuthUser에 role/isActive 추가
+  - login/route.ts: role·is_active DB 조회 → JWT 포함, 비활성 계정 로그인 차단(403)
+  - register/route.ts: JWT에 role='user'/isActive=true 포함
+  - proxy.ts: JWT 기반 isActive 차단(쿠키 삭제+/login 리다이렉트), /admin/** master 전용 보호(/unauthorized 리다이렉트)
+  - board/layout.tsx: users 테이블에서 role 조회 → Sidebar에 userRole 전달
+  - Sidebar.tsx: userRole prop 추가, master일 때 관리자 메뉴(계정 관리/권한 설정) 표시
+  - app/unauthorized/page.tsx 신규 생성 (403 안내 페이지)
+  - app/admin/layout.tsx 신규 생성 (master 검증 + 사이드바 레이아웃)
+  - app/admin/page.tsx 신규 생성 (계정 목록 테이블: 이름/이메일/역할/활성화/삭제)
+  - app/admin/permissions/page.tsx 신규 생성 (페이지 권한 테이블: admin_access/user_access 토글)
+  - app/api/admin/users/route.ts 신규 생성 (GET: 전체 사용자 목록)
+  - app/api/admin/users/[id]/route.ts 신규 생성 (PATCH: 역할/활성화 수정, DELETE: 계정 삭제)
+  - app/api/admin/permissions/route.ts 신규 생성 (GET: 권한 목록, PATCH: 권한 수정)
+- 전체 레이아웃 재구성 (헤더 상단 고정 + 사이드바 소분류 전용 + 콘텐츠)
+  - lib/navigation.ts 신규 생성 (대분류/중분류/소분류 메뉴 구조 배열, masterOnly 필터 포함)
+  - app/api/auth/me/route.ts 신규 생성 (GET: JWT 기반 로그인 사용자 정보 반환)
+  - app/components/Header.tsx 신규 생성 (로고, 대분류 호버 드롭다운, 모바일 햄버거 드로어, 사용자명+로그아웃)
+  - app/components/LayoutProvider.tsx 신규 생성 (클라이언트, pathname 기반 헤더/사이드바 조건부 렌더링, /api/auth/me 유저 조회)
+  - app/components/Sidebar.tsx 전면 재작성 (소분류 전용, 소분류 없으면 null 반환, 호버 임시 펼침/핀 고정 구조)
+  - app/layout.tsx 수정 (LayoutProvider 적용, 로그인/회원가입 페이지는 헤더 미노출)
+  - app/page.tsx 수정 (메인 홈: "Manwol MES" 제목 + 구글형 통합검색 입력창 UI)
+  - app/login/page.tsx 수정 (로그인 성공 이동: /board → /)
+  - app/board/layout.tsx 간소화 (Sidebar 제거, 서버측 인증 확인만 유지)
+  - app/admin/layout.tsx 간소화 (Sidebar 제거, master 검증만 유지)
+- 권한 설정 페이지를 계정 관리 페이지로 통합 (탭 UI)
+  - app/admin/permissions/page.tsx 삭제
+  - app/admin/page.tsx: "계정 목록" / "권한 설정" 탭 UI로 재작성 (계정·권한 기능 단일 페이지 통합)
+  - lib/navigation.ts: 관리 카테고리에서 "권한설정"(/admin/permissions) 항목 제거, "계정관리"만 유지
+- UI 컴포넌트 정리 및 디자인 통일
+  - app/components/ui/Button.tsx 신규 (variant: primary/secondary/danger/ghost, size: sm/md/lg)
+  - app/components/ui/Input.tsx 신규 (label, error, success, hint, suffix 슬롯)
+  - app/components/ui/Card.tsx 신규 (padding / overflow-hidden 두 모드)
+  - app/components/ui/Badge.tsx 신규 (master/admin/user/active/inactive variant)
+  - app/components/ui/Modal.tsx 신규 (오버레이+다이얼로그, confirm/cancel)
+  - app/components/ui/Tabs.tsx 신규 (탭 스트립 컴포넌트)
+  - app/components/ui/Table.tsx 신규 (TableWrapper, Th, Tr, Td 등 named exports)
+  - app/components/Button.tsx: ui/Button re-export로 교체 (기존 임포트 호환 유지)
+  - app/components/Header.tsx: 대분류 버튼 화살표(▾) 제거, 스타일 간소화
+  - app/admin/page.tsx: Tabs·Table·Badge·Button·Modal 컴포넌트 적용, window.confirm → Modal 교체
+  - app/board/write/page.tsx: Card·Input·Button 적용, pl-12 제거
+  - app/board/[id]/page.tsx: Card·Button 적용, pl-12 제거
+  - app/login/page.tsx: Card·Input·Button 적용
+  - app/register/page.tsx: Card·Input·Button 적용, suffix 슬롯으로 eye 토글 처리
+- Soft Delete 전환 (모든 삭제를 논리 삭제로 변경)
+  - DB 컬럼 추가 (psql 직접 실행): posts·comments·users에 is_deleted BOOLEAN DEFAULT false, deleted_at TIMESTAMP
+  - app/api/posts/route.ts: GET WHERE p.is_deleted = false 추가
+  - app/api/posts/[id]/route.ts: GET·PUT WHERE is_deleted = false 추가, DELETE → UPDATE SET is_deleted=true, deleted_at=NOW()
+  - app/api/posts/[id]/comments/route.ts: GET·POST 존재 확인 쿼리에 is_deleted = false 추가, 댓글 목록 WHERE c.is_deleted = false 추가
+  - app/api/posts/[id]/comments/[commentId]/route.ts: PUT WHERE is_deleted=false 추가, DELETE → soft delete
+  - app/api/admin/users/route.ts: GET WHERE is_deleted = false 추가
+  - app/api/admin/users/[id]/route.ts: PATCH WHERE is_deleted=false 추가, DELETE → soft delete
+  - app/api/auth/check-email/route.ts: WHERE email=$1 AND is_deleted=false (활성 계정만 중복 확인)
+  - app/api/auth/register/route.ts: INSERT 전 이메일 존재 사전 확인, 탈퇴 계정 이메일 재가입 차단 (명시 에러)
+  - app/api/auth/login/route.ts: WHERE email=$1 AND is_deleted=false (탈퇴 계정 로그인 차단)
+- UI 수정: 헤더 로고 이미지 교체, 메인 페이지 간소화
+  - app/components/Header.tsx: "Manwol MES" 텍스트 → /logo.png 이미지(img 태그, h-8)
+  - app/page.tsx: 시스템 설명 문구 제거, 게시판 바로가기 버튼 제거, 제목+검색창만 유지
+- 댓글 Soft Delete 표시 방식 개선
+  - app/api/posts/[id]/comments/route.ts: GET에서 is_deleted 포함 전체 댓글 조회 후 코드로 필터링 — 활성 대댓글 있는 삭제 댓글은 is_deleted=true로 포함, 없으면 제외
+  - app/board/[id]/page.tsx: CommentRow에 is_deleted 추가, 초기 댓글 쿼리에 c.is_deleted 포함, 동일 필터링 로직 적용
+  - app/board/[id]/_components/CommentSection.tsx: CommentRow에 is_deleted 필드 추가, 삭제된 부모 댓글은 "삭제된 댓글입니다" 회색 텍스트 표시(작성자/내용/버튼 숨김), 대댓글은 정상 표시, handleDeleteComment 낙관적 업데이트 개선(대댓글 있으면 is_deleted=true 표시, 없으면 제거)
+- app/board/_components/BoardFilter.tsx: 선택삭제 버튼 노출 조건 변경 — 체크박스 1개 이상 선택 시만 표시, 전체 선택 시 "전체삭제", 미선택 시 버튼 숨김
+- app/board/_components/BoardFilter.tsx: 컬럼별 텍스트 정렬 설정 기능 추가 — ⚙️ 버튼 클릭 시 팝업 표시, 번호·제목·작성자·조회수·👍·👎·작성일 각 컬럼 왼쪽/가운데/오른쪽 정렬 선택, localStorage 저장, 테이블 즉시 반영
+- app/board/_components/BoardFilter.tsx: 정렬 설정 UI를 팝업 → 편집모드 방식으로 전환 — ⚙️ 버튼 클릭 시 편집모드 진입, 헤더 각 컬럼 내 인라인 정렬 아이콘 버튼 표시, 헤더 배경색 변경으로 편집 중 표시, 완료 버튼 또는 ⚙️ 재클릭으로 종료, 팝업 제거
+- 컬럼 정렬 편집모드를 공통 Table 컴포넌트로 통합
+  - app/components/ui/Table.tsx: "use client" 추가, AlignValue/ColumnDef/AlignableTableProps 타입, AlignIcon/GearIcon/alignClass 헬퍼, AlignableTable<T> 컴포넌트 추가 (tableId 기반 localStorage, ⚙️ 아이콘만 표시, 편집모드 시 헤더 하단 정렬 버튼, 배경색 변경 없음)
+  - app/board/_components/BoardFilter.tsx: 정렬 관련 코드 전부 제거, AlignableTable 교체 (tableId="board")
+  - app/admin/page.tsx: 계정/권한 테이블을 AlignableTable로 교체 (tableId="admin-users"/"admin-permissions")
+- app/components/ui/Table.tsx: ⚙️ 버튼 위치 변경 (테이블 내부 absolute → 외부 컨테이너 기준 right-0 top-0), 모든 th에 whitespace-nowrap 적용
+- app/components/ui/Table.tsx: 편집모드 진입/종료 시 셀 크기 변동 수정 — 정렬 버튼 영역을 조건부 렌더링에서 항상 렌더링으로 변경, invisible/visible 전환으로 공간 유지하며 표시·숨김 처리
+- app/components/ui/Table.tsx: AlignableTable 기본 스타일을 게시판 스타일로 통일 — theadClassName 기본값 bg-gray-100 text-sm text-gray-600, rowDivide 기본값 true (세로 구분선 항상 표시)
+- app/components/ui/Table.tsx: 정렬 버튼 visibility 방식 제거 → absolute 포지션 방식으로 교체 (th에 relative, 버튼 div를 top-full z-30 absolute 배치), ⚙️ 아이콘 2배 확대 (h-3.5→h-7)
+- app/components/ui/Table.tsx: ⚙️ 아이콘 크기 조정 (h-7→h-4, text-base 수준), 정렬 버튼 위치 변경 (헤더 아래 top-full → 헤더 위 bottom-full)
+- app/components/ui/Table.tsx: 정렬 버튼 absolute 방식 폐기 → thead 안 별도 tr 행으로 변경 (overflow-hidden/z-index 문제 해결), pt-8→pt-6 축소
+- app/components/ui/Table.tsx: 레이아웃 밀림 수정 — 별도 tr 방식 제거, 정렬 버튼을 기존 th 내부로 이동 후 invisible/visible 토글로 헤더 높이 항상 일정하게 유지 (BoardFilter 잔여 코드 없음 확인)
+- app/board/page.tsx: 테이블 컨테이너 크기·패딩을 admin/page.tsx와 통일 (max-w-4xl→max-w-5xl, py-4 md:py-8→py-6 md:py-8)
+- app/components/ui/Table.tsx: 정렬 버튼 위치 개선 — th 내 invisible 버튼 제거·py-3 복원, 카드를 outer(relative, overflow-hidden 없음)+inner(overflow-hidden) 이중 구조로 분리, 편집모드 오버레이를 outer 기준 absolute bottom-full flex 행으로 구현, toFlexCellClass 헬퍼로 컬럼 너비 근사 대응
+- app/components/ui/Table.tsx: 정렬 버튼 완전 재구현 — absolute/이중카드 구조 폐기, ⚙️을 flex justify-end 단순 행으로 변경, 정렬 버튼을 테이블 외부 별도 div(isEditMode 조건부, display:none 방식)로 분리, 테이블 카드 단순 구조 복귀
+- 시스템 전체 클릭 가능 요소에 cursor-pointer 적용: Button.tsx(enabled 상태), Header.tsx(대분류 버튼·로그아웃·햄버거), Sidebar.tsx(핀 버튼), Table.tsx(⚙️·정렬 버튼), Tabs.tsx(탭 버튼), admin/page.tsx(ToggleSwitch·활성화·select), login/page.tsx·register/page.tsx(EyeToggle)
+- app/components/ui/Table.tsx: 정렬 버튼 useRef 측정 방식으로 재구현 — useLayoutEffect로 th 너비 측정, overflow-x-auto 안 div.relative에 absolute 오버레이 배치(가로 스크롤 연동), th에 paddingTop으로 공간 확보, toFlexCellClass 제거
+- app/components/ui/Table.tsx: 이름 컬럼 정렬 버튼 클릭 불가 버그 수정 — overflow-hidden rounded-xl의 border-radius 클리핑이 첫 컬럼 오버레이 버튼 영역을 차단하는 것이 원인, 오버레이를 overflow-hidden 카드 밖 relative 래퍼 기준으로 이동, console.log 추가
+- app/components/ui/Table.tsx: 정렬 설정 방식 팝업으로 완전 재구현 — 오버레이/useRef 방식 전부 제거, ⚙️ 클릭 시 팝업 표시(컬럼별 행+정렬 3버튼+강조), 팝업 외부 클릭 닫기, localStorage 저장, 테이블 본체 스타일 무변경
+- app/admin/page.tsx: 이름 컬럼 정렬 미반영 수정 — renderUserCell "name" 케이스의 div.flex → div.inline-flex 변경 (block 레벨 flex는 td의 text-align에 반응하지 않아 정렬 변경이 시각적으로 반영되지 않았음)
+- app/board/_components/BoardFilter.tsx: 이제 기본값과 동일해진 theadClassName·rowDivide 명시 prop 제거

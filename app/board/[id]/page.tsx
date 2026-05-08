@@ -5,6 +5,7 @@ import { verifyAuthFromCookies } from "@/lib/auth";
 import LikeButtons from "./_components/LikeButtons";
 import CommentSection from "./_components/CommentSection";
 import DeleteButton from "./_components/DeleteButton";
+import Card from "@/app/components/ui/Card";
 
 // DB에서 조회한 게시글 상세 행 타입
 interface PostDetailRow {
@@ -26,6 +27,8 @@ interface CommentRow {
   user_id: number;
   parent_id: number | null;
   content: string;
+  // is_deleted: 댓글 논리 삭제 여부 (삭제됐지만 대댓글이 있는 경우 포함)
+  is_deleted: boolean;
   author_name: string;
   created_at: string;
 }
@@ -114,7 +117,8 @@ export default async function PostDetailPage({
   );
   const currentUserName = userNameResult.rows[0]?.name ?? "";
 
-  // 댓글 목록 조회 (작성자 이름 JOIN, 작성 시간 오름차순)
+  // 댓글 목록 조회 (is_deleted 포함, 전체 조회 후 JS에서 필터링)
+  // Soft Delete 전략: API route와 동일한 로직 적용
   const commentsResult = await pool.query<CommentRow>(
     `SELECT
        c.id,
@@ -122,6 +126,7 @@ export default async function PostDetailPage({
        c.user_id,
        c.parent_id,
        c.content,
+       c.is_deleted,
        u.name        AS author_name,
        c.created_at::text AS created_at
      FROM comments c
@@ -131,14 +136,10 @@ export default async function PostDetailPage({
     [postId]
   );
 
-  // 최상위 댓글과 대댓글 분리 후 중첩 구조 구성
-  const parentComments: CommentWithReplies[] = [];
+  // 활성 대댓글(is_deleted=false)만 replyMap에 수집
   const replyMap = new Map<number, CommentRow[]>();
-
   for (const comment of commentsResult.rows) {
-    if (comment.parent_id === null) {
-      parentComments.push({ ...comment, replies: [] });
-    } else {
+    if (comment.parent_id !== null && !comment.is_deleted) {
       if (!replyMap.has(comment.parent_id)) {
         replyMap.set(comment.parent_id, []);
       }
@@ -146,18 +147,25 @@ export default async function PostDetailPage({
     }
   }
 
-  for (const comment of parentComments) {
-    comment.replies = replyMap.get(comment.id) ?? [];
+  // 최상위 댓글 필터링:
+  //   포함: is_deleted=false 이거나, is_deleted=true이고 활성 대댓글이 있는 경우
+  //   제외: is_deleted=true이고 활성 대댓글이 없는 경우
+  const parentComments: CommentWithReplies[] = [];
+  for (const comment of commentsResult.rows) {
+    if (comment.parent_id !== null) continue;
+    const hasActiveReplies = (replyMap.get(comment.id)?.length ?? 0) > 0;
+    if (!comment.is_deleted || hasActiveReplies) {
+      parentComments.push({ ...comment, replies: replyMap.get(comment.id) ?? [] });
+    }
   }
 
   // 현재 로그인 사용자가 게시글 작성자인지 여부
   const isAuthor = post.user_id === authUser.userId;
 
   return (
-    // 전체 배경
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        {/* 게시판 목록으로 돌아가기 */}
+    <div className="min-h-full bg-gray-50">
+      <div className="mx-auto max-w-3xl px-4 py-6 md:py-8">
+        {/* 게시판으로 돌아가기 */}
         <Link
           href="/board"
           className="mb-4 inline-block text-sm text-gray-500 hover:text-blue-600"
@@ -166,24 +174,23 @@ export default async function PostDetailPage({
         </Link>
 
         {/* 게시글 카드 */}
-        <div className="mb-6 overflow-hidden rounded-xl bg-white shadow-md">
-          {/* 게시글 헤더: 제목 + 메타 정보 + 수정/삭제 버튼 */}
-          <div className="border-b border-gray-100 px-8 py-6">
-            <h1 className="mb-3 text-2xl font-bold text-gray-800">
+        <Card padding={false} className="mb-6">
+          {/* 게시글 헤더 */}
+          <div className="border-b border-gray-100 px-6 py-5">
+            <h1 className="mb-3 text-xl font-bold text-gray-900 md:text-2xl">
               {post.title}
             </h1>
-            <div className="flex items-center justify-between">
-              {/* 작성자 이름 · 날짜 */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm text-gray-500">
                 {post.author_name} · {formatDate(post.created_at)}
               </span>
 
-              {/* 수정/삭제 버튼: 작성자 본인만 표시 */}
+              {/* 수정/삭제: 작성자 본인만 */}
               {isAuthor && (
                 <div className="flex gap-2">
                   <Link
                     href={`/board/${post.id}/edit`}
-                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                    className="inline-flex min-h-[36px] items-center rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
                   >
                     수정
                   </Link>
@@ -195,15 +202,14 @@ export default async function PostDetailPage({
           </div>
 
           {/* 게시글 본문 */}
-          <div className="px-8 py-6">
+          <div className="px-6 py-5">
             <p className="whitespace-pre-wrap leading-relaxed text-gray-700">
               {post.content}
             </p>
           </div>
 
-          {/* 좋아요/싫어요 영역 */}
-          <div className="flex justify-center border-t border-gray-100 px-8 py-5">
-            {/* 인터랙션이 필요하므로 클라이언트 컴포넌트로 분리 */}
+          {/* 좋아요/싫어요 */}
+          <div className="flex justify-center border-t border-gray-100 px-6 py-4">
             <LikeButtons
               postId={post.id}
               initialLikeCount={parseInt(post.like_count, 10)}
@@ -211,7 +217,7 @@ export default async function PostDetailPage({
               initialUserLike={userLikeType}
             />
           </div>
-        </div>
+        </Card>
 
         {/* 댓글 섹션: 목록 + 작성 폼 (클라이언트 컴포넌트) */}
         <CommentSection

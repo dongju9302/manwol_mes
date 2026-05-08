@@ -1,115 +1,122 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { NAV_CATEGORIES, type SubItem } from "@/lib/navigation";
 
-// 사이드바 메뉴 항목 타입
-interface MenuItem {
-  // 이동할 경로
-  href: string;
-  // 표시할 레이블
-  label: string;
-  // 메뉴 아이콘 (이모지)
-  icon: string;
-}
-
-// 부모(서버 컴포넌트)에서 전달받는 props 타입
+// 사이드바 props 타입
 interface SidebarProps {
-  // 현재 로그인한 사용자 이름 (하단에 표시)
-  userName: string;
+  // 현재 로그인한 사용자 역할 (소분류 필터링에 사용)
+  userRole: string;
 }
 
-// 추후 메뉴 추가 시 이 배열에만 항목을 추가하면 됨
-const MENU_ITEMS: MenuItem[] = [
-  { href: "/board", label: "게시판", icon: "📋" },
-];
-
-// 사이드바 — 클라이언트 컴포넌트
-// 현재 경로에 따라 활성 메뉴를 하이라이트하고, 하단에 사용자 이름 + 로그아웃 버튼 배치
-export default function Sidebar({ userName }: SidebarProps) {
-  // 현재 URL 경로 (활성 메뉴 판별에 사용)
-  const pathname = usePathname();
-  // 로그아웃 후 페이지 이동을 위한 라우터
-  const router = useRouter();
-  // 로그아웃 요청 중 중복 클릭 방지
-  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-
-  // 로그아웃 핸들러: POST /api/auth/logout → /login으로 이동
-  const handleLogout = async (): Promise<void> => {
-    setIsLoggingOut(true);
-    try {
-      // 서버에서 token 쿠키를 삭제
-      await fetch("/api/auth/logout", { method: "POST" });
-      // replace로 뒤로가기 시 보드 페이지로 돌아오지 않도록 처리
-      router.replace("/login");
-    } catch {
-      // 네트워크 오류가 발생해도 로그인 페이지로 이동
-      router.replace("/login");
+// 현재 경로에 대응하는 소분류 목록 탐색
+// 대분류 → 중분류 순서로 탐색, 경로가 일치하는 중분류의 소분류를 반환
+function findSubItems(pathname: string, userRole: string): SubItem[] {
+  for (const category of NAV_CATEGORIES) {
+    for (const item of category.items) {
+      // 정확히 일치하거나 하위 경로인 경우 해당 중분류로 판단
+      if (pathname === item.href || pathname.startsWith(item.href + "/")) {
+        // 역할 기준으로 소분류 필터링 (masterOnly → master만 접근 가능)
+        return (item.subItems ?? []).filter(
+          (sub) => !sub.masterOnly || userRole === "master"
+        );
+      }
     }
-  };
+  }
+  return [];
+}
+
+// 사이드바 컴포넌트 — 클라이언트 컴포넌트
+// 소분류(3단계) 항목만 표시하는 좌측 사이드바
+// 소분류가 없으면 null 반환(사이드바 미표시)
+// 기본: 접힘(아이콘만, w-14) / 호버: 임시 펼침 / 핀 고정: 항상 펼침(w-48)
+export default function Sidebar({ userRole }: SidebarProps) {
+  const pathname = usePathname();
+
+  // 핀 고정 여부: true → 항상 펼침 유지
+  const [isPinned, setIsPinned] = useState<boolean>(false);
+  // 마우스 호버 여부: true → 임시 펼침
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+
+  // 현재 경로에 해당하는 소분류 항목 목록
+  const subItems = findSubItems(pathname, userRole);
+
+  // 소분류가 없으면 사이드바 렌더링 안 함
+  if (subItems.length === 0) return null;
+
+  // 실제 펼침 상태: 핀 고정 OR 마우스 호버 중
+  const isExpanded = isPinned || isHovered;
 
   return (
-    // 모바일(md 미만)에서는 숨김, md 이상에서 flex column으로 표시
-    <aside className="hidden md:flex h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-white">
-      {/* 상단: 서비스 제목 */}
-      <div className="flex flex-col items-center border-b border-gray-100 px-5 py-5">
-        <p className="text-xl font-bold tracking-wide text-gray-800">
-          Manwol <span className="font-semibold text-gray-400">MES</span>
-        </p>
+    <aside
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={[
+        // 세로 flex 컨테이너, 높이 전체, 오버플로 숨김, 부드러운 너비 전환
+        "flex h-full shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white transition-all duration-200",
+        // 펼침: 12rem / 접힘: 3.5rem
+        isExpanded ? "w-48" : "w-14",
+      ].join(" ")}
+    >
+      {/* 핀 고정 / 접힘 토글 버튼 */}
+      <div className="flex h-10 items-center justify-end border-b border-gray-100 px-2">
+        <button
+          type="button"
+          onClick={() => setIsPinned((prev) => !prev)}
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          title={isPinned ? "사이드바 접기" : "사이드바 고정"}
+        >
+          {isPinned ? (
+            // 접기 아이콘 (chevron left)
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            // 고정 아이콘 (chevron right)
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
       </div>
 
-      {/* 중단: 내비게이션 메뉴 */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-1">
-          {MENU_ITEMS.map((item) => {
-            // 현재 경로가 해당 메뉴 경로와 일치하거나 하위 경로인 경우 활성화
+      {/* 소분류 메뉴 목록 */}
+      <nav className="flex-1 overflow-y-auto py-3">
+        <ul className="space-y-0.5 px-2">
+          {subItems.map((sub) => {
+            // 현재 경로와 일치 여부로 활성 상태 판별
             const isActive =
-              pathname === item.href ||
-              pathname.startsWith(item.href + "/");
+              pathname === sub.href || pathname.startsWith(sub.href + "/");
 
             return (
-              <li key={item.href}>
+              <li key={sub.href}>
                 <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
-                    ${
-                      isActive
-                        ? "bg-blue-50 text-blue-600"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-                    }`}
+                  href={sub.href}
+                  className={[
+                    "flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors",
+                    isExpanded ? "" : "justify-center",
+                    isActive
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-800",
+                  ].join(" ")}
+                  title={!isExpanded ? sub.label : undefined}
                 >
-                  {/* 메뉴 아이콘 */}
-                  <span className="text-base">{item.icon}</span>
-                  {/* 메뉴 레이블 */}
-                  <span>{item.label}</span>
+                  {/* 접힌 상태: 레이블 첫 글자를 아이콘 대용으로 표시 */}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center text-xs font-bold">
+                    {sub.label.charAt(0)}
+                  </span>
+                  {/* 펼친 상태에서만 텍스트 표시 */}
+                  {isExpanded && (
+                    <span className="truncate">{sub.label}</span>
+                  )}
                 </Link>
               </li>
             );
           })}
         </ul>
       </nav>
-
-      {/* 하단: 로그인한 사용자 이름 + 로그아웃 버튼 */}
-      <div className="border-t border-gray-100 px-4 py-4">
-        {/* 사용자 정보 */}
-        <div className="mb-3 px-1">
-          <p className="text-xs text-gray-400">로그인 중</p>
-          {/* truncate: 이름이 길면 말줄임표 처리 */}
-          <p className="truncate text-sm font-semibold text-gray-700">
-            {userName}
-          </p>
-        </div>
-
-        {/* 로그아웃 버튼 */}
-        <button
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-        </button>
-      </div>
     </aside>
   );
 }

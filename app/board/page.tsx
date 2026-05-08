@@ -39,13 +39,18 @@ export default async function BoardPage() {
   return (
     // 전체 배경
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-4xl px-4 py-8">
+      {/* admin/page.tsx와 동일한 컨테이너 크기·패딩 적용 */}
+      <div className="mx-auto max-w-5xl px-4 py-6 md:py-8">
         {/* 페이지 헤더: 제목 + 글쓰기 버튼 */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">게시판</h1>
+          {/* 모바일: 햄버거 버튼(왼쪽 고정) 공간 확보를 위해 pl-12 */}
+          <h1 className="pl-12 text-xl font-bold text-gray-800 md:pl-0 md:text-2xl">
+            게시판
+          </h1>
+          {/* 글쓰기 버튼: 최소 높이 44px (터치 친화적) */}
           <Link
             href="/board/write"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            className="flex min-h-[44px] items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
             글쓰기
           </Link>

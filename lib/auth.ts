@@ -8,6 +8,10 @@ interface JwtPayload {
   userId: string;
   // 사용자 이메일
   email: string;
+  // 권한 역할: 'master' | 'admin' | 'user'
+  role: string;
+  // 계정 활성화 여부
+  isActive: boolean;
   // 발급 시각 (jsonwebtoken 자동 추가)
   iat: number;
   // 만료 시각 (jsonwebtoken 자동 추가)
@@ -20,9 +24,13 @@ export interface AuthUser {
   userId: number;
   // 사용자 이메일
   email: string;
+  // 권한 역할: 'master' | 'admin' | 'user'
+  role: string;
+  // 계정 활성화 여부
+  isActive: boolean;
 }
 
-// 쿠키에서 JWT를 꺼내 검증 후 사용자 정보 반환
+// Route Handler용: NextRequest 쿠키에서 JWT를 꺼내 검증 후 사용자 정보 반환
 // 토큰 없음·만료·위조 등 모든 실패 케이스에서 null 반환
 export function verifyAuth(request: NextRequest): AuthUser | null {
   // 쿠키에서 token 값 추출
@@ -41,6 +49,9 @@ export function verifyAuth(request: NextRequest): AuthUser | null {
       // JWT payload의 userId는 문자열이므로 정수로 변환
       userId: parseInt(decoded.userId, 10),
       email: decoded.email,
+      // 구버전 JWT에 role/isActive 없을 경우 기본값 처리
+      role: decoded.role ?? "user",
+      isActive: decoded.isActive ?? true,
     };
   } catch {
     // 만료(TokenExpiredError), 위조(JsonWebTokenError) 등 모든 검증 실패
@@ -65,9 +76,10 @@ export async function verifyAuthFromCookies(): Promise<AuthUser | null> {
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
 
     return {
-      // JWT payload의 userId는 문자열이므로 정수로 변환
       userId: parseInt(decoded.userId, 10),
       email: decoded.email,
+      role: decoded.role ?? "user",
+      isActive: decoded.isActive ?? true,
     };
   } catch {
     // 만료·위조 등 모든 검증 실패

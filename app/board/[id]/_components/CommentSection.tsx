@@ -14,6 +14,8 @@ interface CommentRow {
   parent_id: number | null;
   // 댓글 본문
   content: string;
+  // 논리 삭제 여부: true이면 "삭제된 댓글입니다" 표시 (활성 대댓글이 있을 때만 포함됨)
+  is_deleted: boolean;
   // 작성자 이름
   author_name: string;
   // 작성 시각 (문자열)
@@ -22,7 +24,7 @@ interface CommentRow {
 
 // 대댓글 배열을 포함한 최상위 댓글 타입
 interface CommentWithReplies extends CommentRow {
-  // 이 댓글에 달린 대댓글 목록
+  // 이 댓글에 달린 활성 대댓글 목록 (is_deleted=false만 포함)
   replies: CommentRow[];
 }
 
@@ -34,7 +36,7 @@ interface CommentSectionProps {
   currentUserId: number;
   // 현재 로그인한 사용자의 이름 (댓글 추가 시 author_name에 사용)
   currentUserName: string;
-  // 서버에서 조회한 초기 댓글 목록
+  // 서버에서 조회한 초기 댓글 목록 (삭제+대댓글 있는 경우 is_deleted=true로 포함)
   initialComments: CommentWithReplies[];
 }
 
@@ -68,9 +70,9 @@ export default function CommentSection({
   // 대댓글 제출 로딩
   const [isReplying, setIsReplying] = useState<boolean>(false);
 
-  // 전체 댓글 수 (최상위 + 대댓글 합산)
+  // 전체 댓글 수 (최상위 + 대댓글 합산, 삭제된 최상위 댓글은 카운트 제외)
   const totalComments = comments.reduce(
-    (acc, c) => acc + 1 + c.replies.length,
+    (acc, c) => acc + (c.is_deleted ? 0 : 1) + c.replies.length,
     0
   );
 
@@ -98,6 +100,7 @@ export default function CommentSection({
           user_id: currentUserId,
           parent_id: null,
           content: newComment,
+          is_deleted: false,
           author_name: currentUserName,
           created_at: new Date().toISOString(),
           replies: [],
@@ -135,6 +138,7 @@ export default function CommentSection({
           user_id: currentUserId,
           parent_id: replyToId,
           content: replyContent,
+          is_deleted: false,
           author_name: currentUserName,
           created_at: new Date().toISOString(),
         };
@@ -156,7 +160,7 @@ export default function CommentSection({
     }
   };
 
-  // 댓글/대댓글 삭제
+  // 댓글/대댓글 삭제 (낙관적 업데이트)
   const handleDeleteComment = async (
     commentId: number,
     parentId: number | null
@@ -168,21 +172,33 @@ export default function CommentSection({
       { method: "DELETE" }
     );
 
-    if (response.ok) {
+    if (!response.ok) return;
+
+    setComments((prev) => {
+      let updated = prev;
+
       if (parentId === null) {
-        // 최상위 댓글 삭제 (대댓글도 CASCADE로 DB에서 삭제됨)
-        setComments((prev) => prev.filter((c) => c.id !== commentId));
+        // ── 최상위 댓글 삭제 ──────────────────────────────────
+        // 대댓글이 있으면: is_deleted=true로 마킹 → "삭제된 댓글입니다" 표시
+        // 대댓글이 없으면: 목록에서 완전히 제거
+        updated = updated.map((c) =>
+          c.id === commentId ? { ...c, is_deleted: true } : c
+        );
       } else {
-        // 대댓글만 삭제
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === parentId
-              ? { ...c, replies: c.replies.filter((r) => r.id !== commentId) }
-              : c
-          )
+        // ── 대댓글 삭제: 해당 replies 배열에서 제거 ──────────
+        updated = updated.map((c) =>
+          c.id === parentId
+            ? { ...c, replies: c.replies.filter((r) => r.id !== commentId) }
+            : c
         );
       }
-    }
+
+      // is_deleted=true이면서 대댓글도 0개인 최상위 댓글은 완전히 제거
+      // (대댓글을 마지막으로 삭제한 직후 부모도 숨겨야 하는 경우 처리)
+      return updated.filter(
+        (c) => !(c.is_deleted && c.replies.length === 0)
+      );
+    });
   };
 
   // 답글 버튼 토글: 같은 댓글 재클릭 시 폼 닫힘
@@ -213,44 +229,53 @@ export default function CommentSection({
         ) : (
           comments.map((comment) => (
             <div key={comment.id} className="px-8 py-5">
-              {/* 최상위 댓글 */}
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  {/* 작성자 이름 + 날짜 */}
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-800">
-                      {comment.author_name}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {formatDate(comment.created_at)}
-                    </span>
+              {/* ── 최상위 댓글 ───────────────────────────────── */}
+              {comment.is_deleted ? (
+                // 삭제된 댓글: "삭제된 댓글입니다" 플레이스홀더만 표시
+                // 작성자·내용·버튼 모두 숨김, 대댓글은 정상 표시
+                <p className="text-sm italic text-gray-400">
+                  삭제된 댓글입니다.
+                </p>
+              ) : (
+                // 활성 댓글: 정상 표시
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    {/* 작성자 이름 + 날짜 */}
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {comment.author_name}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {formatDate(comment.created_at)}
+                      </span>
+                    </div>
+                    {/* 댓글 본문 */}
+                    <p className="whitespace-pre-wrap text-sm text-gray-700">
+                      {comment.content}
+                    </p>
                   </div>
-                  {/* 댓글 본문: whitespace-pre-wrap으로 줄바꿈 유지 */}
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {comment.content}
-                  </p>
-                </div>
 
-                {/* 액션 버튼: 답글 + 본인 댓글 삭제 */}
-                <div className="ml-4 flex shrink-0 gap-3">
-                  <button
-                    onClick={() => toggleReply(comment.id)}
-                    className="text-xs text-blue-500 hover:text-blue-700"
-                  >
-                    {replyToId === comment.id ? "취소" : "답글"}
-                  </button>
-                  {comment.user_id === currentUserId && (
+                  {/* 액션 버튼: 답글 + 본인 댓글 삭제 */}
+                  <div className="ml-4 flex shrink-0 gap-3">
                     <button
-                      onClick={() => handleDeleteComment(comment.id, null)}
-                      className="text-xs text-red-400 hover:text-red-600"
+                      onClick={() => toggleReply(comment.id)}
+                      className="text-xs text-blue-500 hover:text-blue-700"
                     >
-                      삭제
+                      {replyToId === comment.id ? "취소" : "답글"}
                     </button>
-                  )}
+                    {comment.user_id === currentUserId && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id, null)}
+                        className="text-xs text-red-400 hover:text-red-600"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* 대댓글 목록: 왼쪽 구분선으로 들여쓰기 표현 */}
+              {/* ── 대댓글 목록: 왼쪽 구분선으로 들여쓰기 표현 ── */}
               {comment.replies.length > 0 && (
                 <div className="mt-4 space-y-4 border-l-2 border-gray-100 pl-6">
                   {comment.replies.map((reply) => (
@@ -267,7 +292,7 @@ export default function CommentSection({
                             {formatDate(reply.created_at)}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        <p className="whitespace-pre-wrap text-sm text-gray-700">
                           {reply.content}
                         </p>
                       </div>

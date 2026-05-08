@@ -120,20 +120,22 @@ export default function EditPage({
   return (
     // 전체 배경
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      {/* 모바일: py-4, 데스크탑: py-8 */}
+      <div className="mx-auto max-w-3xl px-4 py-4 md:py-8">
         {/* 페이지 헤더: 뒤로가기 링크 + 제목 */}
-        <div className="mb-6 flex items-center gap-4">
+        {/* 모바일: pl-12로 햄버거 버튼 공간 확보 */}
+        <div className="mb-6 flex items-center gap-4 pl-12 md:pl-0">
           <Link
             href={`/board/${id}`}
-            className="text-sm text-gray-500 hover:text-blue-600"
+            className="flex min-h-[44px] items-center text-sm text-gray-500 hover:text-blue-600"
           >
             ← 게시글로
           </Link>
-          <h1 className="text-2xl font-bold text-gray-800">게시글 수정</h1>
+          <h1 className="text-xl font-bold text-gray-800 md:text-2xl">게시글 수정</h1>
         </div>
 
-        {/* 수정 폼 카드 */}
-        <div className="rounded-xl bg-white p-8 shadow-md">
+        {/* 수정 폼 카드: 모바일 p-4, 데스크탑 p-8 */}
+        <div className="rounded-xl bg-white p-4 shadow-md md:p-8">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             {/* 제목 입력 */}
             <div className="flex flex-col gap-1">
@@ -183,18 +185,18 @@ export default function EditPage({
               )}
             </div>
 
-            {/* 버튼 영역: 취소 + 수정 완료 */}
-            <div className="flex justify-end gap-3">
+            {/* 버튼 영역: 취소 + 수정 완료 (모바일: 전체 너비, 데스크탑: 우측 정렬) */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <Link
                 href={`/board/${id}`}
-                className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 취소
               </Link>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                className="min-h-[44px] rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
               >
                 {isSubmitting ? "수정 중..." : "수정 완료"}
               </button>
