@@ -12,16 +12,82 @@
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
+/* ── 다크모드 자동 감지 비활성화 ─────────────────────────────────
+   시스템 다크모드 켜진 사용자에게 의도치 않은 검은 배경이 보이는 문제 방지
+   추후 다크모드 정식 지원 시 별도 작업 예정 */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+} */
+
+/* ── 기본 html·body 설정 ─────────────────────────────────────────
+   min-height 100%: 로그인 등 full-height 페이지의 안전망
+   background-color 흰색 명시: 다크모드 자동감지 비활성화 후 항상 흰 배경 보장 */
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
+  background-color: #ffffff;
   color: var(--foreground);
   /* 시스템 전체 기본 폰트: Pretendard */
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* 모바일 터치 시 기본 하이라이트(파란 플래시) 제거 — PC 무영향 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── iOS 자동 줌 방지 ────────────────────────────────────────────
+   iOS Safari: font-size < 16px 인 input 포커스 시 페이지 자동 줌인 발생
+   모바일(767px 이하)에서만 적용 — PC 에서는 Tailwind text-xs/text-sm 정상 동작
+   checkbox · radio · file 은 font-size 가 시각적으로 무의미하므로 제외 */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* ── 모바일 터치 최적화 ──────────────────────────────────────────
+   길게 누를 때 컨텍스트 메뉴(전화걸기, 링크 미리보기 등) 방지
+   실제 링크 기능은 유지됨 — PC 무영향 */
+button,
+a {
+  -webkit-touch-callout: none;
+}
+
+/* ── 세이프 에리어 유틸 클래스 ──────────────────────────────────
+   env(safe-area-inset-*): 노치/홈바/상태바 영역 값
+   PC / 세이프 에리어 없는 기기에서는 0 으로 평가되어 완전 무영향
+   사용 예: <div class="safe-bottom"> → 홈바 높이만큼 padding-bottom */
+.safe-top    { padding-top:    env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left   { padding-left:   env(safe-area-inset-left); }
+.safe-right  { padding-right:  env(safe-area-inset-right); }
+.safe-x {
+  padding-left:  env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ── 동적 뷰포트 높이 유틸 ──────────────────────────────────────
+   @layer utilities: Tailwind v4 에서 커스텀 유틸 클래스를 Tailwind
+   생성 클래스와 동일한 레이어에 두어 sm: 등 반응형 재정의가 정상 작동하도록 함
+   PC: 100vh 로 동작
+   모바일: 100dvh — 소프트 키보드가 올라와도 실제 가시 영역만큼만 차지
+   두 줄 선언으로 dvh 미지원 브라우저(구형) 에도 100vh 폴백 적용 */
+@layer utilities {
+  .min-h-screen-dvh {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+/* ── PWA Standalone 모드 감지 ────────────────────────────────────
+   홈 화면 추가 후 앱처럼 실행될 때 적용할 스타일 작성 위치
+   예: 브라우저 UI 가 없으므로 상단 여백 제거, 스플래시 커스텀 등 */
+@media (display-mode: standalone) {
+  /* 향후 PWA 전용 스타일 추가 예정 */
 }

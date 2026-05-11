@@ -190,7 +190,7 @@ export default async function PostDetailPage({
                 <div className="flex gap-2">
                   <Link
                     href={`/board/${post.id}/edit`}
-                    className="inline-flex min-h-[36px] items-center rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                    className="inline-flex min-h-[44px] items-center rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 md:min-h-[36px]"
                   >
                     수정
                   </Link>

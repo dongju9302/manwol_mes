@@ -119,7 +119,7 @@ export default function EditPage({
 
   return (
     // 전체 배경
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-full bg-gray-50">
       {/* 모바일: py-4, 데스크탑: py-8 */}
       <div className="mx-auto max-w-3xl px-4 py-4 md:py-8">
         {/* 페이지 헤더: 뒤로가기 링크 + 제목 */}
@@ -173,7 +173,7 @@ export default function EditPage({
                 onChange={handleChange}
                 required
                 disabled={isSubmitting}
-                rows={12}
+                rows={10}
                 className="resize-none rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
               />
             </div>

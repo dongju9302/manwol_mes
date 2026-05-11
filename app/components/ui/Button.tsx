@@ -45,7 +45,12 @@ export default function Button({
       {...props}
       className={[
         // 공통 기본 스타일: 인라인 플렉스, 둥근 모서리, 전환 효과
-        "inline-flex cursor-pointer items-center justify-center rounded-md font-medium transition-colors disabled:cursor-not-allowed",
+        // transition-all: scale·opacity·color 변화 모두 커버
+        // active:scale/opacity: 모바일 터치 시 살짝 눌리는 피드백
+        // disabled:active: disabled 상태에서 active 효과 리셋
+        "inline-flex cursor-pointer items-center justify-center rounded-md font-medium transition-all duration-100",
+        "active:scale-[0.98] active:opacity-90",
+        "disabled:cursor-not-allowed disabled:active:scale-100 disabled:active:opacity-100",
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         className,

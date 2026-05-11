@@ -214,6 +214,7 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
           {(["all", "mine"] as FilterType[]).map((f) => (
             <Button
               key={f}
+              size="md"
               variant={filter === f ? "primary" : "secondary"}
               onClick={() => handleFilterChange(f)}
             >

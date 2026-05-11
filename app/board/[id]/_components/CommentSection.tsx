@@ -215,7 +215,7 @@ export default function CommentSection({
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-md">
       {/* 댓글 섹션 헤더 */}
-      <div className="border-b border-gray-100 px-8 py-4">
+      <div className="border-b border-gray-100 px-4 py-4 sm:px-6">
         <h2 className="font-semibold text-gray-800">댓글 {totalComments}개</h2>
       </div>
 
@@ -223,12 +223,12 @@ export default function CommentSection({
       <div className="divide-y divide-gray-50">
         {comments.length === 0 ? (
           // 댓글 없을 때 안내 메시지
-          <div className="px-8 py-10 text-center text-sm text-gray-400">
+          <div className="px-4 py-10 text-center text-sm text-gray-400 sm:px-6">
             아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
           </div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="px-8 py-5">
+            <div key={comment.id} className="px-4 py-5 sm:px-6">
               {/* ── 최상위 댓글 ───────────────────────────────── */}
               {comment.is_deleted ? (
                 // 삭제된 댓글: "삭제된 댓글입니다" 플레이스홀더만 표시
@@ -256,17 +256,17 @@ export default function CommentSection({
                   </div>
 
                   {/* 액션 버튼: 답글 + 본인 댓글 삭제 */}
-                  <div className="ml-4 flex shrink-0 gap-3">
+                  <div className="ml-2 flex shrink-0 items-center gap-1">
                     <button
                       onClick={() => toggleReply(comment.id)}
-                      className="text-xs text-blue-500 hover:text-blue-700"
+                      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-3 py-2 text-xs text-blue-500 hover:text-blue-700 md:min-h-0 md:min-w-0 md:px-2 md:py-1"
                     >
                       {replyToId === comment.id ? "취소" : "답글"}
                     </button>
                     {comment.user_id === currentUserId && (
                       <button
                         onClick={() => handleDeleteComment(comment.id, null)}
-                        className="text-xs text-red-400 hover:text-red-600"
+                        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-3 py-2 text-xs text-red-400 hover:text-red-600 md:min-h-0 md:min-w-0 md:px-2 md:py-1"
                       >
                         삭제
                       </button>
@@ -302,7 +302,7 @@ export default function CommentSection({
                           onClick={() =>
                             handleDeleteComment(reply.id, comment.id)
                           }
-                          className="ml-4 shrink-0 text-xs text-red-400 hover:text-red-600"
+                          className="ml-1 inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center px-3 py-2 text-xs text-red-400 hover:text-red-600 md:min-h-0 md:min-w-0 md:px-2 md:py-1"
                         >
                           삭제
                         </button>
@@ -324,12 +324,12 @@ export default function CommentSection({
                     onChange={(e) => setReplyContent(e.target.value)}
                     placeholder="답글을 입력하세요"
                     disabled={isReplying}
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
                   />
                   <button
                     type="submit"
                     disabled={isReplying || !replyContent.trim()}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                    className="inline-flex min-h-[44px] items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400 md:min-h-[38px]"
                   >
                     {isReplying ? "등록 중..." : "등록"}
                   </button>
@@ -341,7 +341,7 @@ export default function CommentSection({
       </div>
 
       {/* 새 댓글 작성 폼 */}
-      <div className="border-t border-gray-100 px-8 py-5">
+      <div className="border-t border-gray-100 px-4 py-5 sm:px-6">
         <form onSubmit={handleSubmitComment} className="flex gap-3">
           <textarea
             value={newComment}
@@ -354,7 +354,7 @@ export default function CommentSection({
           <button
             type="submit"
             disabled={isSubmitting || !newComment.trim()}
-            className="self-end rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+            className="inline-flex min-h-[44px] items-center self-end rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400 md:min-h-[38px]"
           >
             {isSubmitting ? "등록 중..." : "댓글 등록"}
           </button>

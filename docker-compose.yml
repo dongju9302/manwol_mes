@@ -1,0 +1,41 @@
+services:
+  # Next.js 앱 컨테이너
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: manwol-nextjs
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # PostgreSQL DB 컨테이너
+  db:
+    image: postgres:16-alpine
+    container_name: manwol-db
+    environment:
+      POSTGRES_USER: manwol
+      POSTGRES_PASSWORD: manwol_dev_password
+      POSTGRES_DB: all_is_well
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # 최초 컨테이너 실행 시 알파벳 순서로 자동 실행 (data 볼륨이 비어있을 때만)
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U manwol -d all_is_well"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# 영구 데이터 저장 볼륨
+volumes:
+  postgres_data:

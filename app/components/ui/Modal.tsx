@@ -63,7 +63,7 @@ export default function Modal({
           {/* 취소 버튼 */}
           <Button
             variant="secondary"
-            size="md"
+            size="lg"
             onClick={onCancel}
             disabled={isPending}
           >
@@ -73,7 +73,7 @@ export default function Modal({
           {/* 확인 버튼 */}
           <Button
             variant={confirmVariant}
-            size="md"
+            size="lg"
             onClick={onConfirm}
             disabled={isPending}
           >

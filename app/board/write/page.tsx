@@ -68,7 +68,7 @@ export default function WritePage() {
         <div className="mb-6 flex items-center gap-2">
           <Link
             href="/board"
-            className="flex h-9 w-9 items-center justify-center rounded-md text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-gray-400 hover:bg-gray-200 hover:text-gray-600 md:h-9 md:w-9 md:min-h-0 md:min-w-0"
             title="게시판으로"
           >
             ←
@@ -85,6 +85,7 @@ export default function WritePage() {
               id="title"
               type="text"
               name="title"
+              size="default"
               value={form.title}
               onChange={handleChange}
               placeholder="제목을 입력하세요 (최대 255자)"
@@ -106,7 +107,7 @@ export default function WritePage() {
                 placeholder="내용을 입력하세요"
                 required
                 disabled={isLoading}
-                rows={14}
+                rows={10}
                 className="resize-none rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400"
               />
             </div>

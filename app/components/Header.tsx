@@ -16,12 +16,14 @@ export interface HeaderUser {
 interface HeaderProps {
   // LayoutProvider에서 주입. null이면 비로그인 상태
   user: HeaderUser | null;
+  // 로그아웃 성공 후 LayoutProvider가 user 상태를 초기화하는 콜백
+  onLogout?: () => void;
 }
 
 // 헤더 컴포넌트 — 클라이언트 컴포넌트
 // 좌측 로고 / 대분류 호버 드롭다운 / 우측 사용자명+로그아웃
 // 모바일: 햄버거 → 전체 너비 모바일 메뉴 드로어
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, onLogout }: HeaderProps) {
   const router = useRouter();
 
   // 현재 열린 드롭다운 대분류 키 (null: 모두 닫힘)
@@ -62,13 +64,17 @@ export default function Header({ user }: HeaderProps) {
   }, []);
 
   // 로그아웃 핸들러
+  // API 호출 성공 후 onLogout() 실행 → LayoutProvider에서 setUser(null) + 페이지 이동
+  // API 실패 시에도 동일하게 onLogout() 호출하여 강제 로그아웃 처리
   const handleLogout = async (): Promise<void> => {
     setIsLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.replace("/login");
     } catch {
-      router.replace("/login");
+      // 네트워크 오류여도 클라이언트 상태는 초기화
+    } finally {
+      // 성공·실패 모두 상태 초기화 및 /login 이동을 부모에게 위임
+      onLogout?.();
     }
   };
 
@@ -181,7 +187,7 @@ export default function Header({ user }: HeaderProps) {
       <button
         type="button"
         onClick={() => setIsMobileOpen((prev) => !prev)}
-        className="ml-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 md:hidden"
+        className="ml-auto flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 md:hidden"
         aria-label="메뉴 열기"
       >
         {isMobileOpen ? (
@@ -221,7 +227,7 @@ export default function Header({ user }: HeaderProps) {
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsMobileOpen(false)}
-                        className="block rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                        className="flex min-h-[44px] items-center rounded-lg px-2 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
                       >
                         {item.label}
                       </Link>

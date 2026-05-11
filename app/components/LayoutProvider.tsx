@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Header, { type HeaderUser } from "./Header";
 import Sidebar from "./Sidebar";
 
@@ -18,19 +18,29 @@ export default function LayoutProvider({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   // /api/auth/me로 조회한 현재 사용자 정보
   const [user, setUser] = useState<HeaderUser | null>(null);
 
-  // 마운트 시 사용자 정보 조회 (루트 레이아웃에 위치하므로 앱 전체에서 1회만 실행)
+  // pathname 변경마다 사용자 정보 재조회
+  // [] → [pathname]: 회원가입·로그인 직후 router.push로 이동해도 즉시 갱신
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { user: HeaderUser | null } | null) => {
-        if (data?.user) setUser(data.user);
+        // 로그인 상태면 user 설정, 비로그인이면 null로 초기화
+        setUser(data?.user ?? null);
       })
-      .catch(() => null);
-  }, []);
+      .catch(() => setUser(null));
+  }, [pathname]);
+
+  // 로그아웃 핸들러: Header에서 API 호출 성공 후 이 함수가 실행됨
+  // setUser(null)로 헤더 사용자 정보 즉시 초기화 후 /login 이동
+  const handleLogout = useCallback(() => {
+    setUser(null);
+    router.replace("/login");
+  }, [router]);
 
   // 현재 경로가 인증 페이지에 해당하는지 확인
   const isAuthPage = AUTH_PATHS.some(
@@ -47,7 +57,7 @@ export default function LayoutProvider({
     // 전체 뷰포트를 세로 flex 컨테이너로 구성
     <div className="flex h-screen flex-col">
       {/* 상단 고정 헤더 */}
-      <Header user={user} />
+      <Header user={user} onLogout={handleLogout} />
 
       {/* 헤더 아래 나머지 공간: 사이드바 + 메인 콘텐츠 */}
       <div className="flex flex-1 overflow-hidden">

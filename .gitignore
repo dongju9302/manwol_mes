@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# example 파일은 커밋 대상 (값 없는 키 목록 — 팀 공유용)
+!.env.production.example
 
 # vercel
 .vercel
@@ -42,3 +44,6 @@ next-env.d.ts
 
 # local db (학습용 JSON, 민감 데이터 포함 가능)
 data/users.json
+
+# Docker 볼륨 (named volume이지만 호스트 마운트 대비 명시적 제외)
+postgres_data/

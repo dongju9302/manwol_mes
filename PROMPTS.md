@@ -97,7 +97,7 @@
 - app/board/_components/LogoutButton.tsx 신규 생성 (클라이언트 컴포넌트: POST /api/auth/logout 호출 후 /login 이동)
 - app/board/page.tsx 헤더에 LogoutButton 추가 (글쓰기 버튼 왼쪽 배치)
 
-## 2026-05-08
+## 2026-05-11
 
 - users 테이블에 phone VARCHAR(20) NOT NULL DEFAULT '' 컬럼 추가 (ALTER TABLE, DBeaver에서 실행)
 - app/register/page.tsx: 이름과 이메일 사이에 연락처(모바일) 입력 필드 추가 (010-0000-0000 자동 하이픈, 필수값, 010으로 시작하는 11자리 유효성 검사)
@@ -208,4 +208,76 @@
 - app/components/ui/Table.tsx: 이름 컬럼 정렬 버튼 클릭 불가 버그 수정 — overflow-hidden rounded-xl의 border-radius 클리핑이 첫 컬럼 오버레이 버튼 영역을 차단하는 것이 원인, 오버레이를 overflow-hidden 카드 밖 relative 래퍼 기준으로 이동, console.log 추가
 - app/components/ui/Table.tsx: 정렬 설정 방식 팝업으로 완전 재구현 — 오버레이/useRef 방식 전부 제거, ⚙️ 클릭 시 팝업 표시(컬럼별 행+정렬 3버튼+강조), 팝업 외부 클릭 닫기, localStorage 저장, 테이블 본체 스타일 무변경
 - app/admin/page.tsx: 이름 컬럼 정렬 미반영 수정 — renderUserCell "name" 케이스의 div.flex → div.inline-flex 변경 (block 레벨 flex는 td의 text-align에 반응하지 않아 정렬 변경이 시각적으로 반영되지 않았음)
+- 공통 컴포넌트 모바일 터치 최적화: Input.tsx(size prop 추가, py-2→py-2.5, text-sm 제거), Button.tsx(active:scale/opacity 터치 피드백), login·register의 EyeToggle 버튼 44px 터치 영역 확보
+- login/register 페이지 모바일 PWA 레이아웃 최적화: min-h-screen-dvh 적용, 모바일 bg-white(앱 느낌)/PC sm:bg-gray-50, Card→div 교체로 모바일 border·shadow 제거(sm: 복원), Input size="lg" 적용
+- PC 로그인 페이지 문제 수정: globals.css의 .min-h-screen-dvh를 @layer utilities로 감싸기(Tailwind v4), 다크모드 자동감지 주석처리(라이트 고정), body background-color #ffffff 명시, html/body min-height 추가, login·register 패딩 sm:p-8 명시화
+- PC 웹 + 모바일 PWA 전역 설정 추가
+  - app/layout.tsx: viewport export 분리(Next.js 16 방식), metadata에 manifest·appleWebApp 추가
+  - public/manifest.json 신규 생성 (name/short_name/display/icons 등 PWA 기본값)
+  - app/globals.css: input font-size 16px(iOS 줌 방지), 터치 최적화(-webkit-tap-highlight), safe-area 유틸 클래스, dvh 유틸, PWA 미디어쿼리 추가
 - app/board/_components/BoardFilter.tsx: 이제 기본값과 동일해진 theadClassName·rowDivide 명시 prop 제거
+- app/globals.css: input/textarea/select font-size 16px 규칙을 !important + 구체적 선택자로 강화 (Tailwind text-sm이 적용돼도 16px 유지, iOS 자동 줌 완전 방지, checkbox·radio·file 제외)
+- proxy.ts matcher 수정: 확장자 있는 정적 파일 전체 인증 체크 제외 (favicon\\.ico 단독 제외 → .*\\..* 패턴으로 통합)
+- PC 터치 영역 1차 축소 (md: 접두사, 모바일 min-h-[44px] 유지)
+  - admin/page.tsx 역할 select: md:min-h-[32px] md:px-2 md:py-1 md:text-xs 추가
+  - admin/page.tsx 활성화 토글 버튼: md:min-h-[28px] 추가
+  - admin/page.tsx 삭제 Button: md:min-h-[28px] 추가
+  - CommentSection.tsx 답글 버튼: md:min-h-0 md:min-w-0 md:px-2 md:py-1 추가
+  - CommentSection.tsx 댓글 삭제 버튼: md:min-h-0 md:min-w-0 md:px-2 md:py-1 추가
+  - CommentSection.tsx 대댓글 삭제 버튼: md:min-h-0 md:min-w-0 md:px-2 md:py-1 추가
+- PC 터치 영역 2차 축소 (md: 접두사, 모바일 min-h-[44px] 유지)
+  - write/page.tsx 제목 Input: size="lg" → size="default" 변경
+  - board/[id]/page.tsx 수정 Link 버튼: md:min-h-[36px] 추가
+  - DeleteButton.tsx 삭제 버튼: md:min-h-[36px] 추가
+  - CommentSection.tsx 답글 등록 버튼: md:min-h-[38px] 추가
+  - CommentSection.tsx 댓글 등록 버튼: md:min-h-[38px] 추가
+- PC 터치 영역 3차 마무리 (md: 접두사, 모바일 유지)
+  - Tabs.tsx 탭 버튼: md:py-2 md:min-h-[36px] 추가
+  - BoardFilter.tsx 필터 버튼: size="lg" → size="md" 변경
+  - write/page.tsx 뒤로가기 아이콘 버튼: md:h-9 md:w-9 md:min-h-0 md:min-w-0 추가
+- PC/모바일 디자인 이슈 수정
+  - admin/page.tsx 계정관리 h1: pl-12 md:pl-0 추가 (모바일 햄버거 버튼 영역 확보, /board와 통일)
+  - globals.css input/textarea/select font-size 16px !important 규칙을 @media (max-width: 767px)로 감싸기 (PC에서 Tailwind text-xs 등 정상 동작)
+- 모바일/PC 추가 수정
+  - board/page.tsx h1: pl-12 md:pl-0 제거 (햄버거 버튼은 헤더 영역 별개이므로 불필요)
+  - admin/page.tsx h1: pl-12 md:pl-0 제거 (두 페이지 제목 좌측 정렬 통일)
+  - admin/page.tsx 역할 select: md:text-xs → md:text-[11px], md:py-1 → md:py-0, md:h-7 추가 (PC 컴팩트)
+- admin/page.tsx 역할 select md:text-[11px] → md:!text-[11px] 변경 (Tailwind ! = !important, JIT 미감지 또는 명시도 충돌 해결)
+- Docker 배포 사전 설정
+  - next.config.ts: output: 'standalone' 추가 (Docker 이미지 최적화)
+  - .env.production.example 신규 생성 (키 목록 + 주석, git 커밋 대상)
+  - .env.production 신규 생성 (실제 값 포함, git 제외)
+  - .gitignore: .env.production 추가
+  - .dockerignore 신규 생성 (빌드 제외 목록)
+- Dockerfile 신규 생성 (multi-stage: deps → builder → runner, node:22-alpine, standalone 모드, nextjs 비권한 사용자)
+- docker-compose.yml 신규 생성 (nextjs + postgres:16-alpine, healthcheck, postgres_data 볼륨, 포트 5433:5432)
+- db/init.sql 신규 생성 (로컬 pg_dump --schema-only 추출, Docker 최초 실행 시 자동 테이블 생성)
+- docker-compose.yml db 볼륨에 ./db/init.sql:/docker-entrypoint-initdb.d/init.sql 마운트 추가
+- db/seed.sql 신규 생성 (page_permissions 초기 데이터, ON CONFLICT DO NOTHING 멱등성 보장)
+- docker-compose.yml volumes 01-init.sql / 02-seed.sql 번호 접두사로 실행 순서 보장
+- proxy.ts 인증 강화: JWT 검증 후 DB 조회 추가 (사용자 미존재 또는 is_deleted 시 토큰 삭제+/login 리다이렉트, is_active=false 동일, DB 오류 시 fail-open)
+- LayoutProvider.tsx: useEffect 의존성 []→[pathname] (pathname 변경마다 /api/auth/me 재조회), handleLogout 추가 (setUser(null)+router.replace), Header에 onLogout prop 전달
+- Header.tsx: HeaderProps에 onLogout 추가, handleLogout 성공 시 onLogout() 호출로 상태 초기화 위임
+- .gitignore: postgres_data/ 추가 (Docker named volume 호스트 마운트 대비 명시적 제외)
+- PWA 아이콘 파일 배치 및 manifest.json 수정
+  - app/: favicon.ico, icon0.svg, icon1.png, apple-icon.png 복사 (Downloads/favicon-for-app/)
+  - public/: web-app-manifest-192x192.png, web-app-manifest-512x512.png 복사 (Downloads/favicon-for-public/)
+  - public/manifest.json icons src 경로 수정 (/icons/icon-*.png → /web-app-manifest-*x*.png)
+  - public/icons/ 폴더 정리
+- 계정관리 테이블 모바일 카드형 전환 (app/admin/page.tsx): md 미만에서 카드 리스트, md 이상은 AlignableTable 유지
+- 계정관리 페이지 터치 영역 44px 일괄 수정
+  - admin/page.tsx: 역할 select min-h-[44px], 활성화 버튼 min-h-[44px], 삭제 버튼 min-h-[44px], ToggleSwitch wrapper min-h-[44px], 이메일 max-w-[200px] sm:max-w-[160px]
+  - Tabs.tsx: 탭 버튼 py-3 min-h-[44px]
+  - Modal.tsx: 확인/취소 버튼 size="lg"
+- 모바일 터치 영역 44px 일괄 수정
+  - LikeButtons.tsx: 좋아요/싫어요 버튼 min-h-[44px] 추가
+  - CommentSection.tsx: 답글/삭제 버튼 min-h-[44px]+px-3 py-2, 등록 버튼 min-h-[44px], 답글 input text-sm 제거, px-8→px-4 sm:px-6
+  - BoardFilter.tsx: 필터 버튼 size="md"→size="lg"
+  - write/page.tsx: 뒤로가기 버튼 h-9 w-9→min-h-[44px] min-w-[44px], Input size="lg"
+  - board/[id]/page.tsx: 수정 버튼 min-h-[36px]→min-h-[44px]
+  - Header.tsx: 햄버거 버튼 h-9 w-9→min-h-[44px] min-w-[44px], 모바일 드로어 링크 py-2→py-3
+- PC/모바일 비정상 스크롤 일괄 수정 (LayoutProvider의 main이 overflow-auto 스크롤 영역이므로 내부 페이지는 min-h-screen 사용 금지)
+  - app/board/page.tsx: 외곽 div min-h-screen → min-h-full
+  - app/board/[id]/edit/page.tsx: 외곽 div min-h-screen → min-h-full, textarea rows={12} → rows={10}
+  - app/board/write/page.tsx: textarea rows={14} → rows={10}
+  - login/register/unauthorized: LayoutProvider 밖(AUTH_PATHS)이므로 min-h-screen-dvh 유지

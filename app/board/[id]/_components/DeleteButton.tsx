@@ -52,7 +52,7 @@ export default function DeleteButton({ postId }: DeleteButtonProps) {
   };
 
   return (
-    <Button variant="danger" size="sm" onClick={handleDelete} disabled={isLoading}>
+    <Button variant="danger" size="sm" onClick={handleDelete} disabled={isLoading} className="min-h-[44px] md:min-h-[36px]">
       {isLoading ? "삭제 중..." : "삭제"}
     </Button>
   );

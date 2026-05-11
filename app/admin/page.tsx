@@ -99,17 +99,23 @@ function ToggleSwitch({
       aria-checked={checked}
       onClick={onChange}
       disabled={disabled}
-      className={[
-        "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
-        checked ? "bg-blue-600" : "bg-gray-200",
-      ].join(" ")}
+      // 터치 영역 44px 확보 — 배경색 없이 투명 래퍼로 클릭 면적만 확대
+      className="inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
     >
+      {/* 시각적 pill: 원래 h-6 w-11 크기 그대로 유지 */}
       <span
         className={[
-          "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform",
-          checked ? "translate-x-6" : "translate-x-1",
+          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+          checked ? "bg-blue-600" : "bg-gray-200",
         ].join(" ")}
-      />
+      >
+        <span
+          className={[
+            "inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform",
+            checked ? "translate-x-6" : "translate-x-1",
+          ].join(" ")}
+        />
+      </span>
     </button>
   );
 }
@@ -315,7 +321,7 @@ export default function AdminPage() {
 
       case "email":
         return (
-          <span className="block max-w-[160px] truncate text-gray-500 lg:max-w-none">
+          <span className="block max-w-[200px] truncate text-gray-500 sm:max-w-[160px] lg:max-w-none">
             {user.email}
           </span>
         );
@@ -328,7 +334,7 @@ export default function AdminPage() {
             onChange={(e) => handleRoleChange(user.id, e.target.value)}
             disabled={isPending}
             className={[
-              "rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+              "min-h-[44px] rounded-md border px-3 py-2 text-sm font-medium transition-colors md:h-7 md:min-h-[32px] md:px-2 md:py-0 md:!text-[11px]",
               user.role === "master"
                 ? "border-purple-200 bg-purple-50 text-purple-700"
                 : user.role === "admin"
@@ -361,7 +367,7 @@ export default function AdminPage() {
             disabled={isPending}
             title={user.is_active ? "클릭하면 비활성화" : "클릭하면 활성화"}
             className={[
-              "inline-flex min-h-[32px] items-center rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              "inline-flex min-h-[44px] items-center rounded-full px-3 py-1 text-xs font-medium transition-colors md:min-h-[28px]",
               user.is_active
                 ? "bg-green-50 text-green-700 hover:bg-green-100"
                 : "bg-red-50 text-red-600 hover:bg-red-100",
@@ -379,7 +385,7 @@ export default function AdminPage() {
             size="sm"
             onClick={() => handleDeleteClick(user.id, user.name)}
             disabled={isPending}
-            className="text-red-500 hover:bg-red-50 hover:text-red-600"
+            className="min-h-[44px] text-red-500 hover:bg-red-50 hover:text-red-600 md:min-h-[28px]"
           >
             삭제
           </Button>
@@ -460,15 +466,130 @@ export default function AdminPage() {
 
         {/* ── 탭: 계정 목록 ──────────────────────────────────── */}
         {activeTab === "users" && (
-          <AlignableTable
-            tableId="admin-users"
-            columns={USER_COLUMNS}
-            data={users}
-            renderCell={renderUserCell}
-            getRowKey={(user) => user.id}
-            loading={usersLoading}
-            emptyMessage="등록된 계정이 없습니다."
-          />
+          <>
+            {/* ── 모바일 카드 목록 (md 미만) ── */}
+            <div className="md:hidden">
+              {usersLoading ? (
+                // 로딩 중 안내
+                <div className="py-12 text-center text-sm text-gray-400">
+                  불러오는 중...
+                </div>
+              ) : users.length === 0 ? (
+                // 빈 상태 안내
+                <div className="rounded-xl bg-white py-12 text-center text-sm text-gray-400">
+                  등록된 계정이 없습니다.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {users.map((user) => {
+                    // 현재 행의 처리 중 여부
+                    const isPending = pendingUserIds.has(user.id);
+                    return (
+                      <div
+                        key={user.id}
+                        className="space-y-3 rounded-lg border border-gray-200 bg-white p-4"
+                      >
+                        {/* 이름 + 역할 배지 */}
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-900">
+                            {user.name}
+                          </span>
+                          <Badge variant={roleToBadgeVariant(user.role)}>
+                            {user.role}
+                          </Badge>
+                        </div>
+
+                        {/* 이메일 */}
+                        <p className="truncate text-sm text-gray-500">
+                          {user.email}
+                        </p>
+
+                        {/* 역할 변경 select */}
+                        <select
+                          value={user.role}
+                          onChange={(e) =>
+                            handleRoleChange(user.id, e.target.value)
+                          }
+                          disabled={isPending}
+                          className={[
+                            "w-full min-h-[44px] rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                            user.role === "master"
+                              ? "border-purple-200 bg-purple-50 text-purple-700"
+                              : user.role === "admin"
+                                ? "border-blue-100 bg-blue-50 text-blue-700"
+                                : "border-gray-200 bg-gray-50 text-gray-500",
+                            isPending
+                              ? "cursor-not-allowed opacity-50"
+                              : "cursor-pointer",
+                          ].join(" ")}
+                        >
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* 활성화 토글 + 삭제 버튼 가로 배치 */}
+                        <div className="flex items-center justify-between">
+                          {/* 활성화/비활성화 토글 버튼 */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleActive(user.id, !user.is_active)
+                            }
+                            disabled={isPending}
+                            title={
+                              user.is_active
+                                ? "클릭하면 비활성화"
+                                : "클릭하면 활성화"
+                            }
+                            className={[
+                              "inline-flex min-h-[44px] items-center rounded-full px-4 py-1 text-sm font-medium transition-colors",
+                              user.is_active
+                                ? "bg-green-50 text-green-700 hover:bg-green-100"
+                                : "bg-red-50 text-red-600 hover:bg-red-100",
+                              isPending
+                                ? "cursor-not-allowed opacity-50"
+                                : "cursor-pointer",
+                            ].join(" ")}
+                          >
+                            {user.is_active ? "활성" : "비활성"}
+                          </button>
+
+                          {/* 삭제 버튼 */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleDeleteClick(user.id, user.name)
+                            }
+                            disabled={isPending}
+                            className="min-h-[44px] text-red-500 hover:bg-red-50 hover:text-red-600"
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── 데스크탑 테이블 (md 이상) ── */}
+            <div className="hidden md:block">
+              <AlignableTable
+                tableId="admin-users"
+                columns={USER_COLUMNS}
+                data={users}
+                renderCell={renderUserCell}
+                getRowKey={(user) => user.id}
+                loading={usersLoading}
+                emptyMessage="등록된 계정이 없습니다."
+              />
+            </div>
+          </>
         )}
 
         {/* ── 탭: 권한 설정 ──────────────────────────────────── */}

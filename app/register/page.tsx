@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/app/components/ui/Button";
 import Input from "@/app/components/ui/Input";
-import Card from "@/app/components/ui/Card";
 
 // 회원가입 폼 입력값 타입
 interface RegisterForm {
@@ -157,20 +156,22 @@ export default function RegisterPage() {
   };
 
   // 비밀번호 eye 토글 버튼 (Input suffix 슬롯에 삽입)
+  // min-h/w-[44px]: 모바일 최소 터치 영역 확보 (Apple HIG 권장)
+  // 아이콘은 h-5 w-5(20px)로 유지, 버튼 패딩이 클릭 영역을 확장
   const EyeToggle = (
     <button
       type="button"
       onClick={() => setShowPassword((prev) => !prev)}
-      className="cursor-pointer text-gray-400 hover:text-gray-600"
+      className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center text-gray-400 hover:text-gray-600"
       tabIndex={-1}
       aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 표시"}
     >
       {showPassword ? (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
         </svg>
       ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
@@ -179,8 +180,13 @@ export default function RegisterPage() {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-0">
-      <Card className="w-full max-w-sm">
+    // min-h-screen-dvh: 입력 필드 4개라 키보드 대응이 더 중요
+    // 모바일: 흰 배경(앱 느낌), PC(sm+): 회색 배경으로 카드 부각
+    <div className="flex min-h-screen-dvh items-center justify-center bg-white pt-12 pb-8 sm:bg-gray-50 sm:p-8">
+      {/* 회원가입 카드
+          모바일: border·shadow 없음 → full-bleed 앱 느낌
+          PC(sm+): rounded + border + shadow → 카드 스타일 복원 */}
+      <div className="w-full max-w-sm p-6 sm:rounded-xl sm:border sm:border-gray-200 sm:shadow-sm">
         <h1 className="mb-6 text-center text-xl font-bold text-gray-900">
           회원가입
         </h1>
@@ -199,6 +205,7 @@ export default function RegisterPage() {
             required
             disabled={isLoading}
             error={nameError}
+            size="lg"
           />
 
           {/* 연락처 */}
@@ -216,6 +223,7 @@ export default function RegisterPage() {
             maxLength={13}
             error={phoneError}
             success={phoneSuccess}
+            size="lg"
           />
 
           {/* 이메일 */}
@@ -233,6 +241,7 @@ export default function RegisterPage() {
             error={emailError}
             success={emailSuccess}
             hint={emailHint}
+            size="lg"
           />
 
           {/* 비밀번호 */}
@@ -250,6 +259,7 @@ export default function RegisterPage() {
             suffix={EyeToggle}
             error={passwordError}
             success={passwordSuccess}
+            size="lg"
           />
 
           {/* API 레벨 에러 메시지 */}
@@ -278,7 +288,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

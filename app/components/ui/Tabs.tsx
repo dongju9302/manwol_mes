@@ -43,7 +43,7 @@ export default function Tabs({
           type="button"
           onClick={() => onChange(tab.key)}
           className={[
-            "flex-1 cursor-pointer rounded-md py-2 text-sm font-medium transition-colors",
+            "flex-1 cursor-pointer rounded-md py-3 text-sm font-medium transition-colors min-h-[44px] md:py-2 md:min-h-[36px]",
             // 활성 탭: 흰색 배경 + 파란 텍스트 + 그림자
             activeTab === tab.key
               ? "bg-white text-blue-600 shadow-sm"

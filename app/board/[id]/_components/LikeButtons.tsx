@@ -79,7 +79,7 @@ export default function LikeButtons({
       <button
         onClick={() => handleLike("like")}
         disabled={isLoading}
-        className={`flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed
+        className={`flex min-h-[44px] items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed
           ${
             userLike === "like"
               ? "bg-blue-600 text-white"
@@ -93,7 +93,7 @@ export default function LikeButtons({
       <button
         onClick={() => handleLike("dislike")}
         disabled={isLoading}
-        className={`flex items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed
+        className={`flex min-h-[44px] items-center gap-2 rounded-full px-6 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed
           ${
             userLike === "dislike"
               ? "bg-red-500 text-white"
