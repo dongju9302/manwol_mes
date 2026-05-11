@@ -259,6 +259,9 @@
 - LayoutProvider.tsx: useEffect 의존성 []→[pathname] (pathname 변경마다 /api/auth/me 재조회), handleLogout 추가 (setUser(null)+router.replace), Header에 onLogout prop 전달
 - Header.tsx: HeaderProps에 onLogout 추가, handleLogout 성공 시 onLogout() 호출로 상태 초기화 위임
 - .gitignore: postgres_data/ 추가 (Docker named volume 호스트 마운트 대비 명시적 제외)
+- docker-compose.yml DB 인증 정보 환경변수 참조 방식으로 변경 (${POSTGRES_USER} 등, 하드코딩 제거)
+- .env.production.example / .env.production에 POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB 항목 추가
+- .env 심볼릭 링크 생성 (.env.production 가리킴, docker-compose 변수 보간 자동 인식용)
 - PWA 아이콘 파일 배치 및 manifest.json 수정
   - app/: favicon.ico, icon0.svg, icon1.png, apple-icon.png 복사 (Downloads/favicon-for-app/)
   - public/: web-app-manifest-192x192.png, web-app-manifest-512x512.png 복사 (Downloads/favicon-for-public/)
