@@ -55,7 +55,7 @@ export async function POST(
 
     // 게시글 존재 여부 확인
     const postCheck = await pool.query(
-      "SELECT id FROM posts WHERE id = $1",
+      "SELECT id FROM posts WHERE id = $1 AND is_deleted = false",
       [postId]
     );
     if (postCheck.rows.length === 0) {

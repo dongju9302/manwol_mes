@@ -32,6 +32,7 @@ export default async function BoardPage() {
     FROM posts p
     JOIN users u ON p.user_id = u.id
     LEFT JOIN post_likes pl ON p.id = pl.post_id
+    WHERE p.is_deleted = false
     GROUP BY p.id, u.name
     ORDER BY p.created_at DESC
   `);

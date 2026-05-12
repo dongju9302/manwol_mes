@@ -199,12 +199,6 @@ export async function DELETE(
       );
     }
 
-    // [DEBUG] 권한 비교 전 타입 및 값 확인
-    console.log("[DELETE DEBUG] post.user_id:", postResult.rows[0].user_id, typeof postResult.rows[0].user_id);
-    console.log("[DELETE DEBUG] authUser.userId:", authUser.userId, typeof authUser.userId);
-    console.log("[DELETE DEBUG] === 결과:", postResult.rows[0].user_id === authUser.userId);
-    console.log("[DELETE DEBUG] == 결과:", postResult.rows[0].user_id == authUser.userId);
-
     // 작성자 본인 여부 확인
     if (postResult.rows[0].user_id !== authUser.userId) {
       return Response.json(

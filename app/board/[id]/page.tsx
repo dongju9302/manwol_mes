@@ -81,7 +81,7 @@ export default async function PostDetailPage({
      FROM posts p
      JOIN users u ON p.user_id = u.id
      LEFT JOIN post_likes pl ON p.id = pl.post_id
-     WHERE p.id = $1
+     WHERE p.id = $1 AND p.is_deleted = false
      GROUP BY p.id, u.id`,
     [postId]
   );

@@ -92,14 +92,35 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
     );
   };
 
-  // 지정된 ID 목록을 병렬 삭제 후 로컬 목록에서 제거
+  // 지정된 ID 목록을 병렬 삭제 후 성공한 항목만 로컬 목록에서 제거
   const deletePosts = async (ids: number[]): Promise<void> => {
     setIsDeleting(true);
     try {
-      await Promise.all(
-        ids.map((id) => fetch(`/api/posts/${id}`, { method: "DELETE" }))
+      // allSettled: 일부 실패해도 전체가 중단되지 않음
+      const results = await Promise.allSettled(
+        ids.map(async (id) => {
+          const res = await fetch(`/api/posts/${id}`, { method: "DELETE" });
+          if (!res.ok) {
+            const data: { message?: string } = await res.json().catch(() => ({}));
+            throw new Error(data.message || `삭제 실패 (id: ${id})`);
+          }
+          return id;
+        })
       );
-      setPostList((prev) => prev.filter((p) => !ids.includes(p.id)));
+
+      // 성공한 ID만 추출
+      const succeeded = results
+        .filter((r): r is PromiseFulfilledResult<number> => r.status === "fulfilled")
+        .map((r) => r.value);
+
+      // 실패한 항목이 있으면 사용자에게 알림
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        alert(`${failed.length}개 게시글 삭제에 실패했습니다.`);
+      }
+
+      // 성공한 항목만 UI에서 제거 (실패 항목은 목록 유지)
+      setPostList((prev) => prev.filter((p) => !succeeded.includes(p.id)));
       setCheckedIds(new Set());
     } finally {
       setIsDeleting(false);

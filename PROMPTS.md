@@ -367,3 +367,13 @@
     - Checkout → Buildx 설정 → Docker Hub 로그인 → 이미지 빌드+푸시 → EC2 SSH 배포
   - 필요한 GitHub Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, EC2_HOST, EC2_SSH_KEY
 - 결과: 워크플로우 파일 생성 완료, GitHub Secrets 등록 후 동작 예정
+
+### 작업 7: is_deleted 필터 누락 버그 일괄 수정 + 디버그 로그 정리
+- 목표: Soft Delete된 게시글이 목록/상세/좋아요에 노출되는 버그 수정
+- 진단: board/page.tsx(목록)·board/[id]/page.tsx(상세)·likes/route.ts에 is_deleted=false 조건 누락 확인
+- 수정 파일 5개:
+  - app/board/page.tsx: GROUP BY 앞에 WHERE p.is_deleted = false 추가
+  - app/board/[id]/page.tsx: WHERE p.id = $1 → WHERE p.id = $1 AND p.is_deleted = false
+  - app/api/posts/[id]/likes/route.ts: WHERE id = $1 → WHERE id = $1 AND is_deleted = false
+  - app/api/posts/[id]/route.ts: [DELETE DEBUG] console.log 4줄 제거
+  - app/board/_components/BoardFilter.tsx: deletePosts를 Promise.allSettled로 교체, 실패 항목 UI 유지
