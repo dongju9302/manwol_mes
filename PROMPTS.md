@@ -358,3 +358,12 @@
 ### 다음 단계
 - CLAUDE.md 규칙 보완 (PROMPTS.md 기록 범위 확장)
 - GitHub Actions CI/CD 자동화
+
+### 작업 6: GitHub Actions 자동 배포 워크플로우 작성
+- 목표: main 브랜치 push 시 자동 빌드 → Docker Hub 푸시 → EC2 배포
+- 진행:
+  - EC2에 deploy.sh 생성 (/home/ubuntu/manwol_mes/deploy.sh, chmod +x)
+  - .github/workflows/deploy.yml 생성 (5단계 워크플로우)
+    - Checkout → Buildx 설정 → Docker Hub 로그인 → 이미지 빌드+푸시 → EC2 SSH 배포
+  - 필요한 GitHub Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, EC2_HOST, EC2_SSH_KEY
+- 결과: 워크플로우 파일 생성 완료, GitHub Secrets 등록 후 동작 예정
