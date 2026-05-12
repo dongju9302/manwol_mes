@@ -2,7 +2,7 @@
 
 ## 2026-05-06
 
-- page.tsx 보일러플레이트 전체 제거 후 "안녕하세요! all_is_well 프로젝트입니다." 텍스트만 화면 중앙에 표시
+- page.tsx 보일러플레이트 전체 제거 후 "안녕하세요! manwol_mes 프로젝트입니다." 텍스트만 화면 중앙에 표시
 - AGENTS.md에 프로젝트 개요(프로젝트명, 프레임워크, 목표, DB, 인증, 암호화) 및 작업 기록 섹션 추가 (1차)
 - CLAUDE.md에 작업 규칙 섹션 추가 (1차)
 - AGENTS.md 프로젝트 개요 유지 + CLAUDE.md 작업 규칙 항목 추가·수정 (2차: 작업 목록 승인, 체크리스트 검증, 간결한 답변, 해결방법 설명 항목 추가)
@@ -37,9 +37,9 @@
   - pg: Node.js에서 PostgreSQL에 접속하는 라이브러리. 서버 코드가 DB와 통신할 때 사용
   - @types/pg: pg의 TypeScript 타입 정의 파일. TypeScript 프로젝트에서 pg를 타입 안전하게 사용하기 위해 필요
   - 실행 명령어: npm install pg @types/pg
-- .env.local에 DATABASE_URL 추가 (postgresql://localhost:5432/all_is_well)
+- .env.local에 DATABASE_URL 추가 (postgresql://localhost:5432/manwol_mes)
 - lib/db.ts 신규 생성 (pg Pool로 PostgreSQL 연결, process.env.DATABASE_URL 사용, 싱글턴 패턴으로 앱 전체에서 하나의 Pool만 사용)
-- DBeaver 연결 설정 완료 (Host: localhost, Port: 5432, Database: all_is_well) — GUI로 DB 데이터를 직접 조회·수정하는 툴
+- DBeaver 연결 설정 완료 (Host: localhost, Port: 5432, Database: manwol_mes) — GUI로 DB 데이터를 직접 조회·수정하는 툴
 - lib/db/migrate.ts 신규 생성 (users 테이블 생성: id SERIAL PK, email UNIQUE NOT NULL, password NOT NULL, created_at TIMESTAMP DEFAULT NOW(), CREATE TABLE IF NOT EXISTS 사용), npx ts-node lib/db/migrate.ts 로 실행 완료
 - pg/@types/pg 패키지 재설치, lib/db.ts 재생성 (pg Pool 싱글턴), .env.local에 DATABASE_URL 추가
 - register/route.ts — users.json 파일 I/O 제거 후 PostgreSQL INSERT INTO users 로 교체 (이메일 중복은 DB unique 제약 조건으로 처리)
@@ -72,7 +72,7 @@
 - Sidebar.tsx 로고 영역 개편: 로고 이미지 → "Manwol"(굵게) → "MES"(작은 회색) 세로 배치, 전체 가운데 정렬
 - app/icon.svg, app/favicon.ico 삭제 / layout.tsx icons → { icon, shortcut, apple } 모두 /logo.png로 설정
 - layout.tsx title → "Manwol MES", icons → { icon: [{ url: '/logo.png' }] }로 변경
-- app/layout.tsx metadata title → "all_is_well", description 수정, html lang → "ko"
+- app/layout.tsx metadata title → "manwol_mes", description 수정, html lang → "ko"
 - posts 테이블에 view_count INTEGER DEFAULT 0 컬럼 추가 (ALTER TABLE, DBeaver에서 실행)
 - app/api/posts/[id]/route.ts GET에 view_count +1 UPDATE 추가, 응답에 view_count 포함
 - app/board/page.tsx 테이블 스타일 개선: 헤더 bg-gray-200, 행 bg-white + hover:bg-gray-50, 테두리+그림자 추가
@@ -284,3 +284,12 @@
   - app/board/[id]/edit/page.tsx: 외곽 div min-h-screen → min-h-full, textarea rows={12} → rows={10}
   - app/board/write/page.tsx: textarea rows={14} → rows={10}
   - login/register/unauthorized: LayoutProvider 밖(AUTH_PATHS)이므로 min-h-screen-dvh 유지
+
+## 2026-05-12
+
+- 프로젝트명 manwol_mes → manwol_mes 일괄 변경
+  - package.json name 필드
+  - .env.local DATABASE_URL DB명
+  - .env.production POSTGRES_DB, DATABASE_URL DB명
+  - AGENTS.md 프로젝트명
+  - PROMPTS.md 내 모든 언급
