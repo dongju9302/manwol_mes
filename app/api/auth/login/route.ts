@@ -140,8 +140,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // HttpOnly + Secure 쿠키에 JWT 토큰 저장 (XSS 공격 방지, HTTPS 전용 전송)
     response.cookies.set("token", token, {
       httpOnly: true,
-      // 프로덕션 환경에서만 Secure 플래그 적용 (개발 환경은 HTTP 허용)
-      secure: process.env.NODE_ENV === "production",
+      // COOKIE_SECURE=true 환경변수로 명시적 제어 (HTTPS 환경에서만 true로 설정)
+      secure: process.env.COOKIE_SECURE === "true",
       sameSite: "lax",
       maxAge: COOKIE_MAX_AGE,
       path: "/",

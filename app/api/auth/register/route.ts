@@ -132,7 +132,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     // HttpOnly 쿠키에 토큰 저장 (login/route.ts와 동일한 설정)
     response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // COOKIE_SECURE=true 환경변수로 명시적 제어 (HTTPS 환경에서만 true로 설정)
+      secure: process.env.COOKIE_SECURE === "true",
       sameSite: "lax",
       maxAge: COOKIE_MAX_AGE,
       path: "/",

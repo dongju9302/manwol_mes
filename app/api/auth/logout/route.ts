@@ -11,8 +11,8 @@ export async function POST(): Promise<NextResponse> {
   // token 쿠키 삭제: maxAge를 0으로 설정하면 브라우저가 즉시 만료 처리
   response.cookies.set("token", "", {
     httpOnly: true,
-    // 프로덕션에서만 Secure 플래그 적용 (login/route.ts와 동일한 설정)
-    secure: process.env.NODE_ENV === "production",
+    // COOKIE_SECURE=true 환경변수로 명시적 제어 (login/route.ts와 동일한 설정)
+    secure: process.env.COOKIE_SECURE === "true",
     sameSite: "lax",
     maxAge: 0,
     path: "/",

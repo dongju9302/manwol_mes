@@ -1,9 +1,7 @@
 services:
   # Next.js 앱 컨테이너
   nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: dongju9302/manwol_mes:latest
     container_name: manwol-nextjs
     ports:
       - "3000:3000"

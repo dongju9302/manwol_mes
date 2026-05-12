@@ -47,3 +47,9 @@ data/users.json
 
 # Docker 볼륨 (named volume이지만 호스트 마운트 대비 명시적 제외)
 postgres_data/
+
+# 백업 파일
+*.bak
+
+# Claude Code 로컬 설정 (권한 기록, 개인 설정)
+.claude/

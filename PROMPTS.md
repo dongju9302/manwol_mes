@@ -287,9 +287,74 @@
 
 ## 2026-05-12
 
-- 프로젝트명 manwol_mes → manwol_mes 일괄 변경
+- 프로젝트명 all_is_well → manwol_mes 일괄 변경
   - package.json name 필드
   - .env.local DATABASE_URL DB명
   - .env.production POSTGRES_DB, DATABASE_URL DB명
   - AGENTS.md 프로젝트명
   - PROMPTS.md 내 모든 언급
+- JWT 쿠키 secure 옵션을 NODE_ENV 기반에서 COOKIE_SECURE 환경변수 기반으로 변경
+  - app/api/auth/login/route.ts, register/route.ts, logout/route.ts 3개 파일
+  - 기존: secure: process.env.NODE_ENV === "production"
+  - 변경: secure: process.env.COOKIE_SECURE === "true"
+  - 목적: HTTP 환경(EC2)에서도 쿠키 작동 가능하도록 배포 환경별 제어
+- COOKIE_SECURE=false 환경변수 추가 및 이미지 재빌드·재배포
+  - 로컬 .env.production, EC2 ~/manwol_mes/.env.production에 COOKIE_SECURE=false 추가
+  - 멀티 플랫폼(amd64+arm64) 이미지 재빌드 후 Docker Hub 푸시
+  - EC2 docker compose pull + up -d 로 재배포
+
+---
+
+## 2026-05-12 (오후 세션) - EC2 배포 + 로그인 401 디버깅
+
+### 작업 1: 프로젝트명 변경 (all_is_well → manwol_mes)
+- 목표: 프로젝트명 통일
+- 진행: GitHub 레포명, 로컬 폴더명, DB명, Docker Hub 레포명 모두 변경
+- 결과: 완료
+
+### 작업 2: Docker 멀티 플랫폼 이미지 빌드
+- 목표: M1 Mac(arm64) + EC2(amd64) 양쪽 지원
+- 진행:
+  - docker buildx create --name multiplatform --use
+  - docker buildx build --platform linux/amd64,linux/arm64 --push
+- 결과: dongju9302/manwol_mes:latest 멀티 플랫폼 manifest 완성
+- 학습: buildx는 표준 방식, M1에서 amd64 빌드 시 에뮬레이션 사용
+
+### 작업 3: EC2 정리 및 파일 배치
+- 목표: 기존 all_is_well 잔재 제거 후 manwol_mes 폴더 구성
+- 진행:
+  - EC2 ~/all_is_well 폴더 삭제 (DB 데이터 없음 확인 후)
+  - ~/manwol_mes 폴더 생성
+  - scp로 docker-compose.yml, .env.production, db/init.sql, db/seed.sql 전송
+  - db 폴더 마운트 경로 일치 확인
+- 결과: 컨테이너 정상 기동
+
+### 작업 4: docker-compose.yml build → image 방식 전환
+- 목표: EC2에서 빌드 부담 제거 (t3.micro RAM 1GB 제약)
+- 진행: nextjs 서비스의 build: 블록 제거 → image: dongju9302/manwol_mes:latest
+- 결과: EC2는 pull만, 빌드는 로컬/Actions에서
+
+### 작업 5: 로그인 401 에러 디버깅
+- 증상: EC2에서 로그인 시 401 Unauthorized 응답
+- 진단 과정:
+  1. 보안그룹 의심 (X - 페이지 접속/회원가입 정상이므로 포트는 열림)
+  2. 환경변수 차이 의심 (X - diff 결과 완전 동일)
+  3. bcrypt 직접 검증으로 비번 일치 여부 확인 → Match: false (오타로 판명)
+  4. 비번 재입력 후 재가입 → 200 OK로 변경
+  5. 그런데도 로그인 화면 머무름 → Application 탭 쿠키 확인
+  6. 원인: 쿠키 Secure: ✓ 옵션이 HTTP 환경에서 차단
+- 해결:
+  - login/register/logout route.ts 3개 파일에서
+  - secure: process.env.NODE_ENV === "production"
+  - → secure: process.env.COOKIE_SECURE === "true" 변경
+  - 로컬/EC2 .env.production에 COOKIE_SECURE=false 추가
+  - 이미지 재빌드 + 푸시 + EC2 재배포
+- 결과: ✅ 로그인 성공, /board 페이지 정상 이동
+- 학습:
+  - 쿠키 Secure 옵션은 HTTPS 전용 (localhost만 예외)
+  - bcrypt 직접 검증이 비번 인증 디버깅의 결정타
+  - DevTools Network/Application 탭이 401 디버깅 필수
+
+### 다음 단계
+- CLAUDE.md 규칙 보완 (PROMPTS.md 기록 범위 확장)
+- GitHub Actions CI/CD 자동화
