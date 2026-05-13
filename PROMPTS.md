@@ -378,6 +378,11 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 11: HTTPS Phase 3D-1 — HTTP → HTTPS 리다이렉트 설정
+- nginx.conf 80 블록: proxy_pass 제거, return 301 https://$host$request_uri 로 교체
+- ACME 챌린지 경로(.well-known/acme-challenge/)는 HTTP 그대로 유지
+- 443 블록 변경 없음
+
 ### 작업 10: HTTPS Phase 3C-3 — nginx.conf에 443 SSL 블록 추가
 - HTTP 80 블록 유지, 443 server 블록 신규 추가
 - TLS 1.2/1.3, 권장 암호 모음, HSTS, OCSP Stapling 설정
