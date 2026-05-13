@@ -368,6 +368,16 @@
   - 필요한 GitHub Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, EC2_HOST, EC2_SSH_KEY
 - 결과: 워크플로우 파일 생성 완료, GitHub Secrets 등록 후 동작 예정
 
+## 2026-05-13
+
+### 작업 1: 게시판 목록 캐싱 문제 해결 (bfcache + force-dynamic)
+- 목표: 뒤로가기로 돌아와도 조회수/좋아요 수가 즉시 반영되도록
+- 수정 내용:
+  - app/board/page.tsx: export const dynamic = "force-dynamic" 추가
+  - app/board/[id]/page.tsx: export const dynamic = "force-dynamic" 추가
+  - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
+  - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
+
 ### 작업 7: is_deleted 필터 누락 버그 일괄 수정 + 디버그 로그 정리
 - 목표: Soft Delete된 게시글이 목록/상세/좋아요에 노출되는 버그 수정
 - 진단: board/page.tsx(목록)·board/[id]/page.tsx(상세)·likes/route.ts에 is_deleted=false 조건 누락 확인

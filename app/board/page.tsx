@@ -3,6 +3,10 @@ import Link from "next/link";
 import pool from "@/lib/db";
 import { verifyAuthFromCookies } from "@/lib/auth";
 import BoardFilter, { type Post } from "./_components/BoardFilter";
+import RefreshOnBack from "./_components/RefreshOnBack";
+
+// 게시판 목록은 항상 최신 조회수/좋아요/댓글 수를 반영해야 하므로 캐시 비활성화
+export const dynamic = "force-dynamic";
 
 // DB에서 조회한 게시글 목록 행 타입
 interface PostListRow extends Post {
@@ -40,6 +44,8 @@ export default async function BoardPage() {
   return (
     // 전체 배경
     <div className="min-h-full bg-gray-50">
+      {/* 뒤로가기(bfcache) 복원 시 데이터 갱신 */}
+      <RefreshOnBack />
       {/* admin/page.tsx와 동일한 컨테이너 크기·패딩 적용 */}
       <div className="mx-auto max-w-5xl px-4 py-6 md:py-8">
         {/* 페이지 헤더: 제목 + 글쓰기 버튼 */}

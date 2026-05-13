@@ -7,6 +7,9 @@ import CommentSection from "./_components/CommentSection";
 import DeleteButton from "./_components/DeleteButton";
 import Card from "@/app/components/ui/Card";
 
+// 조회수 증가가 서버 컴포넌트 렌더링 시 트리거되므로 캐시 비활성화
+export const dynamic = "force-dynamic";
+
 // DB에서 조회한 게시글 상세 행 타입
 interface PostDetailRow {
   id: number;
