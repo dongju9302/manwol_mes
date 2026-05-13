@@ -378,6 +378,11 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 12: HTTPS Phase 3D-2 — COOKIE_SECURE=true 전환 + deploy.sh nginx reload 추가
+- EC2 .env.production: COOKIE_SECURE=false → true (SSH 직접 수정)
+- deploy.sh: nginx graceful reload 단계 추가 (nginx -t 검증 후 reload)
+- nextjs 컨테이너 재시작으로 환경변수 반영
+
 ### 작업 11: HTTPS Phase 3D-1 — HTTP → HTTPS 리다이렉트 설정
 - nginx.conf 80 블록: proxy_pass 제거, return 301 https://$host$request_uri 로 교체
 - ACME 챌린지 경로(.well-known/acme-challenge/)는 HTTP 그대로 유지
