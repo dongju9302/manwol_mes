@@ -378,6 +378,11 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 13: HTTPS Phase 3D-4 — 인증서 갱신 스크립트 git 관리 전환
+- scripts/renew-cert.sh, scripts/CERT_RENEWAL_README.md 신규 생성
+- deploy.yml SCP source에 scripts/ 추가
+- EC2 crontab 경로 변경, 기존 파일 .old 보존
+
 ### 작업 12: HTTPS Phase 3D-2 — COOKIE_SECURE=true 전환 + deploy.sh nginx reload 추가
 - EC2 .env.production: COOKIE_SECURE=false → true (SSH 직접 수정)
 - deploy.sh: nginx graceful reload 단계 추가 (nginx -t 검증 후 reload)

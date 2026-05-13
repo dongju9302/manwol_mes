@@ -63,7 +63,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml,deploy.sh,nginx/nginx.conf"
+          source: "docker-compose.yml,deploy.sh,nginx/nginx.conf,scripts/renew-cert.sh,scripts/CERT_RENEWAL_README.md"
           target: "/home/ubuntu/manwol_mes/"
           overwrite: true
           strip_components: 0
