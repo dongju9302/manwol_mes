@@ -378,6 +378,10 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 3: RefreshOnBack 코드 정리 (프로덕션 정리)
+- console.log 3개 제거, visibilitychange 리스너(동작 없음) 제거
+- popstate + location.reload() 핵심 로직만 유지
+
 ### 작업 2: RefreshOnBack bfcache 복원 방식 변경
 - 기존: router.refresh() — bfcache 복원 직후 RSC 머지 불안정
 - 변경: window.location.reload() — 페이지 전체 강제 갱신으로 확실히 최신 데이터 반영
