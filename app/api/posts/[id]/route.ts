@@ -12,7 +12,6 @@ interface PostDetailRow {
   // COUNT는 pg에서 문자열로 반환
   like_count: string;
   dislike_count: string;
-  view_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -43,7 +42,6 @@ export async function GET(
          u.name AS author_name,
          COUNT(CASE WHEN pl.type = 'like'    THEN 1 END) AS like_count,
          COUNT(CASE WHEN pl.type = 'dislike' THEN 1 END) AS dislike_count,
-         p.view_count,
          p.created_at,
          p.updated_at
        FROM posts p
