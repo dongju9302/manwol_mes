@@ -7,7 +7,7 @@ import CommentSection from "./_components/CommentSection";
 import DeleteButton from "./_components/DeleteButton";
 import Card from "@/app/components/ui/Card";
 
-// 조회수 증가가 서버 컴포넌트 렌더링 시 트리거되므로 캐시 비활성화
+// 사용자별 좋아요 상태를 매 요청마다 DB 조회하므로 캐시 비활성화
 export const dynamic = "force-dynamic";
 
 // DB에서 조회한 게시글 상세 행 타입
@@ -93,15 +93,6 @@ export default async function PostDetailPage({
   if (postResult.rows.length === 0) notFound();
 
   const post = postResult.rows[0];
-
-  // 작성자 본인이 아닌 경우에만 view_count 증가
-  // (서버 컴포넌트가 실제 조회 경로이므로 여기서 처리)
-  if (post.user_id !== authUser.userId) {
-    await pool.query(
-      "UPDATE posts SET view_count = view_count + 1 WHERE id = $1",
-      [postId]
-    );
-  }
 
   // 현재 사용자의 좋아요/싫어요 상태 조회 (없으면 null)
   const userLikeResult = await pool.query<{ type: string }>(
