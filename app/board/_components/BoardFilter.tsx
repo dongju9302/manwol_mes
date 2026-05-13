@@ -70,6 +70,12 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
     }
   }, [isIndeterminate]);
 
+  // 부모(Server Component)에서 새 posts props가 내려오면 로컬 state 동기화
+  // 뒤로가기/refresh 시 최신 조회수/좋아요 수가 화면에 반영되도록 함
+  useEffect(() => {
+    setPostList(posts);
+  }, [posts]);
+
   // 필터 전환 시 선택 초기화
   const handleFilterChange = (next: FilterType): void => {
     setFilter(next);

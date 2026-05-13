@@ -378,6 +378,12 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 4: 조회수 갱신 진짜 원인 해결 + RefreshOnBack 제거
+- 진짜 원인: BoardFilter의 useState<Post[]>(posts)가 최초 마운트 시 1회만 초기화되어 이후 서버에서 새 props를 내려도 무시
+- 해결: useEffect(() => { setPostList(posts); }, [posts]) 추가로 props 변경 시 state 동기화
+- 제거: RefreshOnBack.tsx 삭제, board/page.tsx에서 import·JSX 제거 (근본 해결로 불필요해짐)
+- 유지: force-dynamic (서버가 매 요청마다 DB 최신 조회하도록)
+
 ### 작업 3: RefreshOnBack 코드 정리 (프로덕션 정리)
 - console.log 3개 제거, visibilitychange 리스너(동작 없음) 제거
 - popstate + location.reload() 핵심 로직만 유지
