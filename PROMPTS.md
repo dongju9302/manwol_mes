@@ -378,6 +378,12 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 10: HTTPS Phase 3C-3 — nginx.conf에 443 SSL 블록 추가
+- HTTP 80 블록 유지, 443 server 블록 신규 추가
+- TLS 1.2/1.3, 권장 암호 모음, HSTS, OCSP Stapling 설정
+- ssl_certificate: Let's Encrypt fullchain.pem (certbot-etc 볼륨 경로)
+- docker-compose.yml: nginx ports에 443:443 추가, certbot-etc 볼륨 마운트 확인
+
 ### 작업 9: HTTPS 도입 Phase 3A — Nginx 리버스 프록시 추가 (HTTP 80)
 - nginx/ 디렉토리 및 nginx/nginx.conf 신규 생성
 - docker-compose.yml: nginx 서비스 추가, nextjs 포트 3000 호스트 노출 제거 (expose만)
