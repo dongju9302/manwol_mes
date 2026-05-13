@@ -12,6 +12,7 @@ export interface Post {
   author_name: string;
   // 내글만 필터 판별에 사용
   user_id: number;
+  view_count: number;
   // COUNT 결과 — pg에서 문자열로 반환
   like_count: string;
   dislike_count: string;
@@ -167,6 +168,7 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
     },
     { key: "title",     label: "제목",   defaultAlign: "left"   },
     { key: "author",    label: "작성자", defaultAlign: "center", className: "w-24" },
+    { key: "viewCount", label: "조회수", defaultAlign: "center", className: "hidden lg:table-cell w-16" },
     { key: "like",      label: "👍",     defaultAlign: "center", className: "hidden lg:table-cell w-14" },
     { key: "dislike",   label: "👎",     defaultAlign: "center", className: "hidden lg:table-cell w-14" },
     { key: "createdAt", label: "작성일", defaultAlign: "center", className: "w-28" },
@@ -202,6 +204,9 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
 
       case "author":
         return <span className="text-gray-500">{post.author_name}</span>;
+
+      case "viewCount":
+        return <span className="text-gray-500">{post.view_count}</span>;
 
       case "like":
         return (
@@ -297,9 +302,10 @@ export default function BoardFilter({ posts, currentUserId }: BoardFilterProps) 
                     {post.title}
                   </p>
 
-                  {/* 메타 정보: 작성자 · 좋아요 · 싫어요 · 날짜 */}
+                  {/* 메타 정보: 작성자 · 조회수 · 좋아요 · 싫어요 · 날짜 */}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                     <span>{post.author_name}</span>
+                    <span>조회 {post.view_count}</span>
                     <span className="text-blue-500">
                       👍 {parseInt(post.like_count, 10)}
                     </span>

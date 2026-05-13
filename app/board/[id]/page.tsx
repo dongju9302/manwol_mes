@@ -20,6 +20,7 @@ interface PostDetailRow {
   // COUNT는 pg에서 문자열로 반환
   like_count: string;
   dislike_count: string;
+  view_count: number;
   created_at: string;
 }
 
@@ -80,6 +81,7 @@ export default async function PostDetailPage({
        u.name                                              AS author_name,
        COUNT(CASE WHEN pl.type = 'like'    THEN 1 END)    AS like_count,
        COUNT(CASE WHEN pl.type = 'dislike' THEN 1 END)    AS dislike_count,
+       p.view_count,
        p.created_at::text                                  AS created_at
      FROM posts p
      JOIN users u ON p.user_id = u.id
@@ -93,6 +95,17 @@ export default async function PostDetailPage({
   if (postResult.rows.length === 0) notFound();
 
   const post = postResult.rows[0];
+
+  // 본인 글이 아닐 때 view_count +1, RETURNING으로 최신값 즉시 반영
+  if (post.user_id !== authUser.userId) {
+    const viewResult = await pool.query<{ view_count: number }>(
+      "UPDATE posts SET view_count = view_count + 1 WHERE id = $1 RETURNING view_count",
+      [postId]
+    );
+    if (viewResult.rows[0]) {
+      post.view_count = viewResult.rows[0].view_count;
+    }
+  }
 
   // 현재 사용자의 좋아요/싫어요 상태 조회 (없으면 null)
   const userLikeResult = await pool.query<{ type: string }>(
@@ -176,7 +189,7 @@ export default async function PostDetailPage({
             </h1>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm text-gray-500">
-                {post.author_name} · {formatDate(post.created_at)}
+                {post.author_name} · {formatDate(post.created_at)} · 조회 {post.view_count}
               </span>
 
               {/* 수정/삭제: 작성자 본인만 */}

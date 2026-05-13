@@ -23,6 +23,7 @@ export default async function BoardPage() {
       p.user_id,
       p.title,
       u.name                                               AS author_name,
+      p.view_count,
       COUNT(CASE WHEN pl.type = 'like'    THEN 1 END)     AS like_count,
       COUNT(CASE WHEN pl.type = 'dislike' THEN 1 END)     AS dislike_count,
       p.created_at::text                                   AS created_at

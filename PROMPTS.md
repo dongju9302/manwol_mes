@@ -378,6 +378,18 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 8: 게시판 조회수 기능 재추가 (Phase 2)
+- posts.view_count 컬럼 기존 존재, DB 변경 없음
+- 상세 페이지: UPDATE RETURNING으로 +1 후 최신값 표시 (본인 제외)
+- 목록: SELECT + 컬럼 + 모바일 카드에 조회수 표시
+- BFCache 우회 코드 일절 없음 (새로고침/재클릭 시 반영)
+
+### 작업 7: 게시판 조회수(view_count) 기능 코드 완전 제거
+- app/board/page.tsx: 주석·SELECT 쿼리에서 view_count 제거
+- app/board/[id]/page.tsx: view_count UPDATE 로직 제거, 주석 수정
+- app/board/_components/BoardFilter.tsx: Post 타입, 컬럼 정의, 셀 렌더링, 모바일 카드에서 제거
+- app/api/posts/[id]/route.ts: PostDetailRow 타입, SELECT 쿼리에서 제거
+
 ### 작업 6: 로그인 페이지 이메일 저장 기능 추가
 - app/login/page.tsx: useEffect + localStorage로 이메일 저장/불러오기, 체크박스 UI 추가
 - 로그인 성공 시점에만 저장/삭제 처리 (실패한 이메일 저장 방지)
