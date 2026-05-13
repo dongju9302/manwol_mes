@@ -378,6 +378,15 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 6: 로그인 페이지 이메일 저장 기능 추가
+- app/login/page.tsx: useEffect + localStorage로 이메일 저장/불러오기, 체크박스 UI 추가
+- 로그인 성공 시점에만 저장/삭제 처리 (실패한 이메일 저장 방지)
+
+### 작업 5: JWT 만료 1일로 단축 + 회원가입 비밀번호 복잡도 검증 추가
+- login/route.ts, register/route.ts: JWT_EXPIRES_IN "7d" → "1d", COOKIE_MAX_AGE 7일 → 1일
+- register/route.ts: validatePasswordComplexity() 헬퍼 추가 (영문/숫자/특수문자 2종류 이상)
+- login/route.ts에는 복잡도 검증 미추가 (기존 사용자 로그인 차단 방지)
+
 ### 작업 4: 조회수 갱신 진짜 원인 해결 + RefreshOnBack 제거
 - 진짜 원인: BoardFilter의 useState<Post[]>(posts)가 최초 마운트 시 1회만 초기화되어 이후 서버에서 새 props를 내려도 무시
 - 해결: useEffect(() => { setPostList(posts); }, [posts]) 추가로 props 변경 시 state 동기화

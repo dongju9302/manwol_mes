@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "@/app/components/ui/Button";
@@ -11,6 +11,9 @@ interface LoginForm {
   email: string;
   password: string;
 }
+
+// localStorage 키 (오타 방지 위해 상수화)
+const REMEMBER_EMAIL_KEY = "manwol_remember_email";
 
 // 로그인 페이지 — 클라이언트 컴포넌트
 export default function LoginPage() {
@@ -24,6 +27,19 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string>("");
   // 비밀번호 표시/숨기기 토글
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  // 이메일 저장 체크박스 상태
+  const [rememberEmail, setRememberEmail] = useState<boolean>(false);
+
+  // 컴포넌트 마운트 시 localStorage에서 저장된 이메일 불러오기
+  // SSR 환경에서는 window가 없으므로 useEffect 내부에서만 접근 (Next.js 서버 렌더링 대응)
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (savedEmail) {
+      // 저장된 이메일이 있으면 input에 자동 입력하고 체크박스도 자동 체크
+      setForm((prev) => ({ ...prev, email: savedEmail }));
+      setRememberEmail(true);
+    }
+  }, []);
 
   // 입력 변경 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -49,6 +65,16 @@ export default function LoginPage() {
       const data: { message: string } = await response.json();
 
       if (response.ok) {
+        // 로그인 성공 시점에만 이메일 저장/삭제 처리
+        // 실패한 이메일이 저장되지 않도록 반드시 성공 분기 안에서만 실행
+        if (rememberEmail) {
+          // 체크박스 ON: 입력한 이메일을 localStorage에 저장
+          localStorage.setItem(REMEMBER_EMAIL_KEY, form.email);
+        } else {
+          // 체크박스 OFF: 기존에 저장된 이메일이 있다면 삭제
+          localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        }
+
         // 로그인 성공: 메인 홈 화면으로 이동
         router.push("/");
       } else {
@@ -129,6 +155,20 @@ export default function LoginPage() {
             suffix={EyeToggle}
             size="lg"
           />
+
+          {/* 이메일 저장 체크박스
+              accent-blue-600: 체크 시 브랜드 컬러 적용 (별도 커스텀 체크박스 컴포넌트 없이 네이티브 사용)
+              cursor-pointer: 체크박스와 label 모두 클릭 가능하도록 */}
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={rememberEmail}
+              onChange={(e) => setRememberEmail(e.target.checked)}
+              disabled={isLoading}
+              className="h-4 w-4 cursor-pointer accent-blue-600"
+            />
+            이메일 저장
+          </label>
 
           {/* API 에러 메시지 */}
           <div className="h-5">

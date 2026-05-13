@@ -23,6 +23,15 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // 연락처 형식 검증 정규식: 010-XXXX-XXXX
 const PHONE_REGEX = /^010-\d{4}-\d{4}$/;
 
+// 비밀번호 복잡도 검증: 영문, 숫자, 특수문자 중 2종류 이상 포함 (서버 API와 동일)
+function validatePasswordComplexity(password: string): boolean {
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const types = [hasLetter, hasNumber, hasSpecial].filter(Boolean).length;
+  return types >= 2;
+}
+
 // 회원가입 페이지 — 클라이언트 컴포넌트
 export default function RegisterPage() {
   const router = useRouter();
@@ -55,7 +64,8 @@ export default function RegisterPage() {
   const isEmailValid:    boolean =
     EMAIL_REGEX.test(form.email) && emailCheckStatus === "available";
   const isPhoneValid:    boolean = PHONE_REGEX.test(form.phone);
-  const isPasswordValid: boolean = form.password.length >= 8;
+  const isPasswordValid: boolean =
+    form.password.length >= 8 && validatePasswordComplexity(form.password);
   const isFormValid:     boolean =
     isNameValid && isEmailValid && isPhoneValid && isPasswordValid;
 
@@ -81,9 +91,14 @@ export default function RegisterPage() {
   const emailHint = emailCheckStatus === "checking"
     ? "확인 중..." : undefined;
 
-  // 비밀번호
-  const passwordError = passwordTouched && !isPasswordValid
-    ? "비밀번호는 8자 이상이어야 합니다." : undefined;
+  // 비밀번호 에러 메시지: 길이 미달 → 복잡도 미달 순으로 단계별 안내
+  const passwordError = !passwordTouched
+    ? undefined
+    : form.password.length < 8
+      ? "비밀번호는 8자 이상이어야 합니다."
+      : !validatePasswordComplexity(form.password)
+        ? "영문, 숫자, 특수문자 중 2종류 이상을 포함해야 합니다."
+        : undefined;
   const passwordSuccess = passwordTouched && isPasswordValid
     ? "사용 가능한 비밀번호입니다." : undefined;
 
@@ -253,7 +268,7 @@ export default function RegisterPage() {
             value={form.password}
             onChange={handleChange}
             onBlur={() => setPasswordTouched(true)}
-            placeholder="비밀번호를 입력하세요 (8자 이상)"
+            placeholder="8자 이상, 영문/숫자/특수문자 중 2종 이상"
             required
             disabled={isLoading}
             suffix={EyeToggle}

@@ -3,11 +3,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
 
-// JWT 토큰 만료 시간 (7일)
-const JWT_EXPIRES_IN = "7d";
+// JWT 토큰 만료 시간 (1일)
+const JWT_EXPIRES_IN = "1d";
 
-// 쿠키 만료 시간 (7일, 초 단위)
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+// 쿠키 만료 시간 (1일, 초 단위)
+const COOKIE_MAX_AGE = 60 * 60 * 24;
 
 // 이메일 형식 검증 정규식
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

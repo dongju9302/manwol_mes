@@ -4,9 +4,9 @@ import jwt from "jsonwebtoken";
 import pool from "@/lib/db";
 
 // JWT 토큰 만료 시간 (login/route.ts와 동일)
-const JWT_EXPIRES_IN = "7d";
-// 쿠키 만료 시간 (7일, 초 단위)
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const JWT_EXPIRES_IN = "1d";
+// 쿠키 만료 시간 (1일, 초 단위)
+const COOKIE_MAX_AGE = 60 * 60 * 24;
 
 // 비밀번호 해시에 사용할 salt 라운드 수 (높을수록 보안 강화, 느려짐)
 const SALT_ROUNDS = 10;
@@ -19,6 +19,15 @@ const PHONE_REGEX = /^010-\d{4}-\d{4}$/;
 
 // 비밀번호 최소 길이
 const MIN_PASSWORD_LENGTH = 8;
+
+// 비밀번호 복잡도 검증: 영문, 숫자, 특수문자 중 2종류 이상 포함
+function validatePasswordComplexity(password: string): boolean {
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const types = [hasLetter, hasNumber, hasSpecial].filter(Boolean).length;
+  return types >= 2;
+}
 
 // POST /api/auth/register — 신규 사용자 회원가입 처리
 export async function POST(request: NextRequest): Promise<Response> {
@@ -58,6 +67,14 @@ export async function POST(request: NextRequest): Promise<Response> {
         {
           message: `비밀번호는 최소 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`,
         },
+        { status: 400 }
+      );
+    }
+
+    // 비밀번호 복잡도 검증
+    if (!validatePasswordComplexity(password)) {
+      return Response.json(
+        { message: "비밀번호는 영문, 숫자, 특수문자 중 2종류 이상을 포함해야 합니다." },
         { status: 400 }
       );
     }
