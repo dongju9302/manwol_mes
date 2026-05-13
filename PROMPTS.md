@@ -378,6 +378,13 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 9: HTTPS 도입 Phase 3A — Nginx 리버스 프록시 추가 (HTTP 80)
+- nginx/ 디렉토리 및 nginx/nginx.conf 신규 생성
+- docker-compose.yml: nginx 서비스 추가, nextjs 포트 3000 호스트 노출 제거 (expose만)
+- certbot-www, certbot-etc named volume 정의 추가 (다음 페이즈 대비)
+- 도메인: manwol-mes.duckdns.org
+- COOKIE_SECURE, proxy.ts 변경 없음 (페이즈 3D에서 처리)
+
 ### 작업 8: 게시판 조회수 기능 재추가 (Phase 2)
 - posts.view_count 컬럼 기존 존재, DB 변경 없음
 - 상세 페이지: UPDATE RETURNING으로 +1 후 최신값 표시 (본인 제외)

@@ -41,6 +41,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # 4.4단계: EC2에 필요한 디렉토리 보장
+      # scp-action은 target 디렉토리가 미리 존재해야 하므로 안전망으로 먼저 생성
+      - name: Ensure EC2 directories exist
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            mkdir -p /home/ubuntu/manwol_mes/nginx
+
+      # 4.5단계: EC2 호스트 설정 파일 동기화
+      # Docker 이미지는 컨테이너 내부 코드를 담지만, 아래 파일들은 EC2 호스트가 직접 사용
+      # - docker-compose.yml: 컨테이너 구성 정의
+      # - deploy.sh: 배포 자동화 스크립트
+      # - nginx/nginx.conf: 리버스 프록시 설정
+      - name: Sync host config files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml,deploy.sh,nginx/nginx.conf"
+          target: "/home/ubuntu/manwol_mes/"
+          overwrite: true
+          strip_components: 0
+
       # 5단계: EC2에 SSH 접속 → deploy.sh 실행
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
