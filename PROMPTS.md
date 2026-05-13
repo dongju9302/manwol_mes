@@ -378,6 +378,11 @@
   - app/board/_components/RefreshOnBack.tsx 신규 생성 (pageshow 이벤트로 bfcache 감지 후 router.refresh())
   - app/board/page.tsx: RefreshOnBack 컴포넌트 JSX 최상단에 삽입
 
+### 작업 2: RefreshOnBack bfcache 복원 방식 변경
+- 기존: router.refresh() — bfcache 복원 직후 RSC 머지 불안정
+- 변경: window.location.reload() — 페이지 전체 강제 갱신으로 확실히 최신 데이터 반영
+- useRouter import 제거 (의존성 단순화)
+
 ### 작업 7: is_deleted 필터 누락 버그 일괄 수정 + 디버그 로그 정리
 - 목표: Soft Delete된 게시글이 목록/상세/좋아요에 노출되는 버그 수정
 - 진단: board/page.tsx(목록)·board/[id]/page.tsx(상세)·likes/route.ts에 is_deleted=false 조건 누락 확인
